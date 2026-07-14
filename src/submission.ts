@@ -14,7 +14,7 @@ export interface SubmitOptions {
   gpus: number;
   nodes?: number;
   image: string;
-  maxTimeHours?: number;
+  maxTimeHours: number;
   shmSizeGiB?: number;
   logFile?: string;
   appendLog?: boolean;
@@ -68,9 +68,7 @@ export async function buildSubmissionPayload(
     task_priority: project.maxPriority,
     framework_config: [frameworkConfig],
   };
-  if (options.maxTimeHours !== undefined) {
-    payload.max_running_time_ms = String(Math.trunc(options.maxTimeHours * 3_600_000));
-  }
+  payload.max_running_time_ms = String(Math.trunc(options.maxTimeHours * 3_600_000));
   if (options.excludeNodes.length) payload.exclude_nodes = options.excludeNodes;
   return payload;
 }

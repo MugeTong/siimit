@@ -23,7 +23,7 @@ describe("CLI onboarding", () => {
   test("submit reports all missing required options", () => {
     const result = run("submit");
     expect(result.exitCode).toBe(1);
-    for (const option of ["--name", "--command or --command-file", "--project", "--group", "--gpus", "--image"]) {
+    for (const option of ["--name", "--command or --command-file", "--project", "--group", "--gpus", "--image", "--max-time"]) {
       expect(result.stderr).toContain(option);
     }
   });

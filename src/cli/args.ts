@@ -18,6 +18,7 @@ export function parseSubmitOptions(args: string[]): SubmitOptions {
     ...(!option(args, "--group") ? ["--group"] : []),
     ...(!option(args, "--gpus") ? ["--gpus"] : []),
     ...(!option(args, "--image") ? ["--image"] : []),
+    ...(!option(args, "--max-time") ? ["--max-time"] : []),
   ];
   if (missing.length) {
     throw new SiimitError(
@@ -32,7 +33,7 @@ export function parseSubmitOptions(args: string[]): SubmitOptions {
     gpus: requiredPositiveInteger(args, "--gpus"),
     ...optionalPositiveInteger(args, "--nodes", "nodes"),
     image: requiredOption(args, "--image"),
-    ...optionalNumber(args, "--max-time", "maxTimeHours"),
+    maxTimeHours: requiredPositiveNumber(args, "--max-time"),
     ...optionalNumber(args, "--shm-size", "shmSizeGiB"),
     ...(option(args, "--log-file") ? { logFile: option(args, "--log-file")! } : {}),
     appendLog: args.includes("--append-log"),
@@ -57,6 +58,12 @@ function requiredOption(args: string[], name: string, alias?: string): string {
 function requiredPositiveInteger(args: string[], name: string): number {
   const value = Number(requiredOption(args, name));
   if (!Number.isInteger(value) || value < 1) throw new SiimitError(`${name} must be a positive integer.`);
+  return value;
+}
+
+function requiredPositiveNumber(args: string[], name: string): number {
+  const value = Number(requiredOption(args, name));
+  if (!Number.isFinite(value) || value <= 0) throw new SiimitError(`${name} must be greater than zero.`);
   return value;
 }
 

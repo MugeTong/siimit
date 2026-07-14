@@ -87,7 +87,7 @@ function renderDryRunSummary(
     `Resource: ${nodes > 1 ? `${nodes} nodes × ` : ""}${resource}, ${cpu} CPU, ${memory} GiB per node`,
     `Priority: ${String(payload.task_priority ?? "platform default")}`,
     `Image: ${image}`,
-    `Max time: ${options.maxTimeHours === undefined ? "platform default" : `${options.maxTimeHours} hour(s)`}`,
+    `Max time: ${options.maxTimeHours} hour(s)`,
     `Log: ${logFile ?? "disabled"}`,
     `Command: ${options.command}`,
     "",

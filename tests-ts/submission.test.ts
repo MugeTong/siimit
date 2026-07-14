@@ -75,6 +75,7 @@ describe("submission payload", () => {
       gpus: 4,
       nodes: 3,
       image: "train:latest",
+      maxTimeHours: 1.5,
       excludeNodes: ["node-1"],
     }, { ...DEFAULT_APP_CONFIG, workspace: "训练空间", nodes: 2 });
 
@@ -83,6 +84,7 @@ describe("submission payload", () => {
     expect(payload.logic_compute_group_id).toBe("lcg-1");
     expect(payload.task_priority).toBe(7);
     expect(payload.exclude_nodes).toEqual(["node-1"]);
+    expect(payload.max_running_time_ms).toBe("5400000");
     const config = (payload.framework_config as Record<string, unknown>[])[0]!;
     expect(config.instance_count).toBe(3);
     expect(config.image).toBe("registry.internal/team/train:latest");
