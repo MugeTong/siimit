@@ -10,7 +10,7 @@ import {
   saveSession,
 } from "./config";
 import { SiimitError } from "./errors";
-import { loadJobMetadata } from "./storage/job-metadata";
+import { loadJobMetadata, removeJobArtifacts } from "./storage/job-metadata";
 import { listCurrentUserJobs, renderJobs } from "./jobs";
 import { cancelJob, getJob, removeJob, renderJob, validateJobId } from "./job-actions";
 import { listParticipatingProjects, renderProjects } from "./projects";
@@ -104,6 +104,7 @@ async function removeCommand(args: string[]): Promise<void> {
   }
   const jobId = validateJobId(args[0]);
   const result = await withMutationClient((client) => removeJob(client, jobId));
+  await removeJobArtifacts(jobId);
   emit({ removed: true, job_id: jobId, ...result });
 }
 
@@ -129,7 +130,7 @@ async function getCommand(args: string[]): Promise<void> {
     createdAtMs: job.createdAtMs,
     startedAt: job.startedAt,
     finishedAt: job.finishedAt,
-    runningTime: job.runningTime,
+    platformRunningTime: job.platformRunningTime,
     exit_code: job.exitCode,
     failure_reason: job.failureReason,
     node: job.node,

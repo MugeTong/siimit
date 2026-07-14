@@ -4,6 +4,7 @@ import { listWorkspaces, resolveWorkspace } from "./platform/catalog/workspaces"
 import { renderTable } from "./table";
 import { displayTime, normalizeTime } from "./time";
 import { asRecord as record, records as arrayOfRecords } from "./shared/records";
+import { formatFrameworkResource } from "./shared/resource";
 
 export interface ListOptions {
   workspace?: string;
@@ -65,9 +66,6 @@ export async function listCurrentUserJobs(
     const result = record(response.Result) ?? record(response.data) ?? {};
     for (const job of arrayOfRecords(result.jobs)) {
       const framework = arrayOfRecords(job.framework_config)[0] ?? {};
-      const gpuInfo = record(record(framework.instance_spec_price_info)?.gpu_info);
-      const gpuCount = Number(framework.gpu_count ?? 0);
-      const gpuType = String(gpuInfo?.gpu_type_display ?? gpuInfo?.gpu_product_simple ?? "");
       const created = normalizeTime(job.created_at);
       rows.push({
         jobId: String(job.job_id ?? job.id ?? ""),
@@ -75,7 +73,7 @@ export async function listCurrentUserJobs(
         status: displayStatus(String(job.status ?? "")),
         workspace: names.get(workspaceId) ?? workspaceId,
         project: String(job.project_name ?? job.project_id ?? ""),
-        gpu: gpuCount ? `${gpuCount}x${gpuType || "GPU"}` : "CPU",
+        gpu: formatFrameworkResource(framework),
         createdAt: created.iso,
         createdAtMs: created.milliseconds,
       });

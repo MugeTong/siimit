@@ -3,6 +3,7 @@ import { ApiError, ConfigurationError } from "./errors";
 import { renderTable } from "./table";
 import { displayTime, normalizeTime } from "./time";
 import { asRecord as record, records as arrayOfRecords } from "./shared/records";
+import { formatFrameworkResource } from "./shared/resource";
 
 export interface JobDetail {
   jobId: string;
@@ -17,7 +18,7 @@ export interface JobDetail {
   createdAtMs: number | null;
   startedAt: string;
   finishedAt: string;
-  runningTime: string;
+  platformRunningTime: string;
   exitCode: number | null;
   failureReason: string | null;
   node: string | null;
@@ -84,10 +85,6 @@ export async function getJob(client: InspireClient, jobId: string): Promise<JobD
   }
   const raw = record(response.Result) ?? record(response.data) ?? {};
   const framework = arrayOfRecords(raw.framework_config)[0] ?? {};
-  const gpuCount = Number(framework.gpu_count ?? raw.gpu_count ?? 0);
-  const price = record(framework.instance_spec_price_info) ?? record(framework.resource_spec_price);
-  const gpuInfo = record(price?.gpu_info);
-  const gpuType = String(gpuInfo?.gpu_type_display ?? gpuInfo?.gpu_product_simple ?? price?.gpu_type ?? "GPU");
   const created = normalizeTime(raw.created_at);
   const submittedPriority = integer(raw.task_priority);
   const namedPriority = integer(raw.priority_name);
@@ -104,7 +101,7 @@ export async function getJob(client: InspireClient, jobId: string): Promise<JobD
     name: String(raw.name ?? ""),
     status: String(raw.status ?? "UNKNOWN").replace(/^job_/, "").toUpperCase(),
     project: String(raw.project_name ?? raw.project_id ?? ""),
-    resource: gpuCount > 0 ? `${gpuCount}x${gpuType}` : "CPU",
+    resource: formatFrameworkResource(framework),
     taskPriority: submittedPriority > 0 ? submittedPriority : namedPriority > 0 ? namedPriority : null,
     priorityLevel: String(raw.priority_level ?? ""),
     shmGiB: Number.isFinite(shm) ? (shm === 0 ? "platform_default" : shm) : null,
@@ -112,7 +109,7 @@ export async function getJob(client: InspireClient, jobId: string): Promise<JobD
     createdAtMs: created.milliseconds,
     startedAt: started.iso,
     finishedAt: finished.iso,
-    runningTime: formatDuration(runningMilliseconds),
+    platformRunningTime: formatDuration(runningMilliseconds),
     exitCode,
     failureReason,
     node: nullableString(nodeInfo?.node_name ?? nodeInfo?.name),
@@ -121,9 +118,17 @@ export async function getJob(client: InspireClient, jobId: string): Promise<JobD
 }
 
 export function renderJob(job: JobDetail): string {
+  const headers = ["ID", "NAME", "STATUS"];
+  const values = [job.jobId, job.name, job.status];
+  if (job.exitCode !== null) {
+    headers.push("EXIT");
+    values.push(String(job.exitCode));
+  }
+  headers.push("PRIORITY", "PROJECT", "RESOURCE", "CREATED");
+  values.push(job.taskPriority == null ? "-" : String(job.taskPriority), job.project, job.resource, displayTime(job.createdAt));
   return renderTable(
-    ["ID", "NAME", "STATUS", "EXIT", "PRIORITY", "PROJECT", "RESOURCE", "CREATED"],
-    [[job.jobId, job.name, job.status, job.exitCode == null ? "-" : String(job.exitCode), job.taskPriority == null ? "-" : String(job.taskPriority), job.project, job.resource, displayTime(job.createdAt)]],
+    headers,
+    [values],
   );
 }
 

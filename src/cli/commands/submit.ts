@@ -1,4 +1,4 @@
-import { access } from "node:fs/promises";
+import { access, rm } from "node:fs/promises";
 
 import { InspireClient } from "../../platform/client";
 import { loadAppConfig } from "../../config";
@@ -9,6 +9,7 @@ import { buildSubmissionPayload } from "../../submission";
 import { option, parseSubmitOptions } from "../args";
 import { printSubmitHelp } from "../help";
 import { loginWithSavedCredentials, sessionOrLogin } from "../runtime";
+import { firstFramework, formatFrameworkResource } from "../../shared/resource";
 
 export async function runSubmit(args: string[]): Promise<void> {
   if (args.includes("--help") || args.includes("-h")) return printSubmitHelp();
@@ -53,20 +54,27 @@ export async function runSubmit(args: string[]): Promise<void> {
   }
 
   if (wrapper) await writeLogWrapper(wrapper);
-  const submission = await client.submit(payload);
-  if (submission.jobId && logFile) await saveJobMetadata(submission.jobId, { log_file: logFile });
-  const framework = Array.isArray(payload.framework_config)
-    ? payload.framework_config[0] as Record<string, unknown> | undefined
-    : undefined;
-  const resourceSpec = framework?.resource_spec_price as Record<string, unknown> | undefined;
-  const gpuCount = Number(framework?.gpu_count ?? 0);
-  const gpuType = String(resourceSpec?.gpu_type ?? "GPU").replace(/^NVIDIA_/, "").replaceAll("_", " ");
+  let submission;
+  try {
+    submission = await client.submit(payload);
+  } catch (error) {
+    if (wrapper) await rm(wrapper.path, { force: true }).catch(() => {});
+    throw error;
+  }
+  if (submission.jobId && logFile) {
+    await saveJobMetadata(submission.jobId, {
+      log_file: logFile,
+      ...(wrapper ? { wrapper_file: wrapper.path } : {}),
+    });
+  }
+  const framework = firstFramework(submission.result.framework_config)
+    ?? firstFramework(payload.framework_config);
   emit({
     submitted: true,
     job_id: submission.jobId ?? null,
     status: String(submission.result.status ?? "job_queuing").replace(/^job_/, "").toUpperCase(),
     log_file: logFile ?? null,
-    resource: gpuCount > 0 ? `${gpuCount}x${gpuType}` : "CPU",
+    resource: formatFrameworkResource(framework),
     task_priority: payload.task_priority,
   });
 }

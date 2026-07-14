@@ -68,7 +68,7 @@ describe("job mutations", () => {
     expect(job.createdAt).toBe("2026-07-14T13:33:30.000Z");
     expect(job.startedAt).toBe("2026-07-14T13:33:30.000Z");
     expect(job.finishedAt).toBe("2026-07-14T13:34:35.000Z");
-    expect(job.runningTime).toBe("00:01:05");
+    expect(job.platformRunningTime).toBe("00:01:05");
     expect(job.exitCode).toBeNull();
   });
 
