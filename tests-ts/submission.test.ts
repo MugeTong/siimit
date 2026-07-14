@@ -107,6 +107,10 @@ describe("submission payload", () => {
       expect(first.exitCode).toBe(7);
       expect(await readFile(logFile, "utf8")).toBe("first\n");
       expect(extractLogFile(firstCommand)).toBe(logFile);
+      expect(extractLogFile(`bash -c 'wrapper' siimit-wrapper '/shared/legacy.log' 'echo ok'`))
+        .toBe("/shared/legacy.log");
+      expect(extractLogFile(`bash '/shared/logs/.siimit/wrappers/legacy.log.sh'`))
+        .toBe("/shared/logs/legacy.log");
 
       const secondCommand = buildLoggedCommand(logFile, "printf 'second\\n'", true);
       const second = Bun.spawnSync(["bash", "-c", secondCommand]);

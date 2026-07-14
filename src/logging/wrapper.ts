@@ -21,8 +21,15 @@ export function buildLoggedCommand(logFile: string, command: string, append: boo
 }
 
 export function extractLogFile(command: unknown): string | undefined {
-  const marker = /siimit-log:([A-Za-z0-9+/=]+)/.exec(String(command ?? ""))?.[1];
-  if (!marker) return undefined;
+  const text = String(command ?? "");
+  const marker = /siimit-log:([A-Za-z0-9+/=]+)/.exec(text)?.[1];
+  if (!marker) {
+    const positional = /\bsiimit-wrapper\s+'([^']+)'/.exec(text)?.[1];
+    if (positional) return positional;
+    const wrapper = /'([^']+)\/\.siimit\/wrappers\/([^'/]+)\.sh'/.exec(text);
+    if (wrapper?.[1] && wrapper[2]) return `${wrapper[1]}/${wrapper[2]}`;
+    return undefined;
+  }
   try {
     return Buffer.from(marker, "base64").toString("utf8");
   } catch {

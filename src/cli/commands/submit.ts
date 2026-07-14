@@ -44,12 +44,16 @@ export async function runSubmit(args: string[]): Promise<void> {
   }
 
   if (args.includes("--dry-run")) {
-    return emit({
-      dry_run: true,
-      log_file: logFile ?? null,
-      append_log: options.appendLog === true,
-      payload,
-    });
+    if (args.includes("--json")) {
+      return emit({
+        dry_run: true,
+        log_file: logFile ?? null,
+        append_log: options.appendLog === true,
+        payload,
+      });
+    }
+    console.log(renderDryRunSummary(options, payload, logFile));
+    return;
   }
 
   const submission = await client.submit(payload);
@@ -63,6 +67,32 @@ export async function runSubmit(args: string[]): Promise<void> {
     resource: formatFrameworkResource(framework),
     task_priority: payload.task_priority,
   });
+}
+
+function renderDryRunSummary(
+  options: ReturnType<typeof parseSubmitOptions>,
+  payload: Record<string, unknown>,
+  logFile: string | undefined,
+): string {
+  const framework = firstFramework(payload.framework_config) ?? {};
+  const nodes = Number(framework.instance_count ?? 1);
+  const resource = formatFrameworkResource(framework);
+  const image = String(framework.image ?? options.image);
+  const cpu = Number(framework.cpu ?? 0);
+  const memory = Number(framework.mem_gi ?? 0);
+  return [
+    "Dry run successful. No task was submitted.",
+    `Project: ${options.project}`,
+    `Group: ${options.group}`,
+    `Resource: ${nodes > 1 ? `${nodes} nodes × ` : ""}${resource}, ${cpu} CPU, ${memory} GiB per node`,
+    `Priority: ${String(payload.task_priority ?? "platform default")}`,
+    `Image: ${image}`,
+    `Max time: ${options.maxTimeHours === undefined ? "platform default" : `${options.maxTimeHours} hour(s)`}`,
+    `Log: ${logFile ?? "disabled"}`,
+    `Command: ${options.command}`,
+    "",
+    "Use --dry-run --json to print the complete platform payload.",
+  ].join("\n");
 }
 
 function emit(value: unknown): void {
