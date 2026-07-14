@@ -10,7 +10,6 @@ import {
   saveSession,
 } from "./config";
 import { SiimitError } from "./errors";
-import { extractLogFile } from "./logging/wrapper";
 import { listCurrentUserJobs, renderJobs } from "./jobs";
 import { cancelJob, getJob, removeJob, renderJob, validateJobId } from "./job-actions";
 import { listParticipatingProjects, renderProjects } from "./projects";
@@ -128,7 +127,6 @@ async function getCommand(args: string[]): Promise<void> {
   const jobId = validateJobId(args[0]);
   const job = await withReadClient((client) => getJob(client, jobId));
   if (args.includes("--raw")) return emit(job.raw);
-  const logFile = extractLogFile(job.raw.command);
   if (args.includes("--json")) emit({
     jobId: job.jobId,
     name: job.name,
@@ -146,7 +144,6 @@ async function getCommand(args: string[]): Promise<void> {
     exit_code: job.exitCode,
     failure_reason: job.failureReason,
     node: job.node,
-    log_file: logFile ?? null,
   });
   else console.log(renderJob(job));
 }

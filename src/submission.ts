@@ -1,6 +1,6 @@
 import type { AppConfig } from "./config";
 import type { InspireClient } from "./platform/client";
-import { wrapShellCommand } from "./logging/wrapper";
+import { wrapShellCommand } from "./shell";
 import { resolvePrivateImage } from "./platform/catalog/images";
 import { resolveProject } from "./platform/catalog/projects";
 import { resolveQuota } from "./platform/catalog/quotas";
@@ -16,8 +16,6 @@ export interface SubmitOptions {
   image: string;
   maxTimeHours: number;
   shmSizeGiB?: number;
-  logFile?: string;
-  appendLog?: boolean;
   excludeNodes: string[];
 }
 

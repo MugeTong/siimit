@@ -45,7 +45,6 @@ export const appConfigSchema = z.object({
   image_visibility: z.literal("VISIBILITY_PRIVATE").default("VISIBILITY_PRIVATE"),
   image_sources: z.array(z.string()).default(["SOURCE_PRIVATE", "SOURCE_PUBLIC"]),
   nodes: z.number().int().positive().default(1),
-  log_file: z.string().min(1).optional(),
   framework: z.string().min(1).default("pytorch"),
   priority_strategy: z.literal("project_max").default("project_max"),
   quota_strategy: z.literal("max_resources_for_gpu_count").default("max_resources_for_gpu_count"),

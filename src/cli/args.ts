@@ -1,6 +1,6 @@
 import { SiimitError } from "../errors";
 import type { SubmitOptions } from "../submission";
-import { commandFileCommand } from "../logging/wrapper";
+import { commandFileCommand } from "../shell";
 
 export function option(args: string[], name: string): string | undefined {
   const index = args.indexOf(name);
@@ -35,8 +35,6 @@ export function parseSubmitOptions(args: string[]): SubmitOptions {
     image: requiredOption(args, "--image"),
     maxTimeHours: requiredPositiveNumber(args, "--max-time"),
     ...optionalNumber(args, "--shm-size", "shmSizeGiB"),
-    ...(option(args, "--log-file") ? { logFile: option(args, "--log-file")! } : {}),
-    appendLog: args.includes("--append-log"),
     excludeNodes: repeatedOption(args, "--exclude-node"),
   };
 }
