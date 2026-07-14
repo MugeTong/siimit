@@ -43,7 +43,7 @@ export async function listParticipatingProjects(client: InspireClient): Promise<
   return rows.sort((left, right) => left.name.localeCompare(right.name, "zh-CN"));
 }
 
-export function renderProjects(rows: ProjectRow[]): string {
+export function renderProjects(rows: ProjectRow[], wide = false): string {
   if (!rows.length) return "No participating projects found.";
   return renderTable(
     ["PROJECT", "MAX PRI", "BUDGET", "REMAINING", "MY REMAINING", "ID"],
@@ -58,6 +58,7 @@ export function renderProjects(rows: ProjectRow[]): string {
     {
       maxWidths: [36, 7, 14, 14, 14, 32],
       align: ["left", "right", "right", "right", "right", "left"],
+      wide,
     },
   );
 }

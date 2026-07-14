@@ -84,7 +84,7 @@ export async function listCurrentUserJobs(
     .slice(0, options.limit);
 }
 
-export function renderJobs(rows: JobRow[]): string {
+export function renderJobs(rows: JobRow[], wide = false): string {
   if (!rows.length) return "No jobs found.";
   const headers = ["ID", "NAME", "STATUS", "WORKSPACE", "PROJECT", "RESOURCE", "CREATED"];
   const values = rows.map((row) => [
@@ -96,7 +96,7 @@ export function renderJobs(rows: JobRow[]): string {
     row.gpu,
     displayTime(row.createdAt),
   ]);
-  return renderTable(headers, values);
+  return renderTable(headers, values, { wide });
 }
 
 function normalizeStatus(value: string): string {

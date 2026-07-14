@@ -21,6 +21,7 @@ import { withMutationClient, withReadClient } from "./cli/runtime";
 import { printGroupsHelp, printHelp, printListHelp, printProjectsHelp } from "./cli/help";
 import { runSubmit } from "./cli/commands/submit";
 import { runImages } from "./cli/commands/images";
+import { runConfig } from "./cli/commands/config";
 
 const VERSION = packageInfo.version;
 
@@ -35,6 +36,7 @@ async function main(args: string[]): Promise<void> {
   if (command === "groups") return groupsCommand(rest);
   if (command === "projects") return projectsCommand(rest);
   if (command === "images") return runImages(rest);
+  if (command === "config") return runConfig(rest);
   if (command === "cancel") return cancelCommand(rest);
   if (command === "remove") return removeCommand(rest);
   if (command === "get") return getCommand(rest);
@@ -42,6 +44,10 @@ async function main(args: string[]): Promise<void> {
 }
 
 async function loginCommand(args: string[]): Promise<void> {
+  if (args.includes("--help") || args.includes("-h")) {
+    console.log("Usage: siimit login [--username ID] [--base-url URL]\n\nAuthenticate and save credentials for automatic session renewal.");
+    return;
+  }
   await loadAppConfig();
   const usernameOption = option(args, "--username") ?? process.env.INSPIRE_USERNAME;
   const baseUrl = option(args, "--base-url") ?? process.env.INSPIRE_BASE_URL ?? DEFAULT_BASE_URL;
@@ -54,6 +60,10 @@ async function loginCommand(args: string[]): Promise<void> {
 }
 
 async function logoutCommand(args: string[]): Promise<void> {
+  if (args.includes("--help") || args.includes("-h")) {
+    console.log("Usage: siimit logout [--forget]\n\nClear the session. Use --forget to also remove saved credentials.");
+    return;
+  }
   await removeSession();
   if (args.includes("--forget")) await removeCredentials();
   console.log(args.includes("--forget") ? "Logged out and forgot saved credentials." : "Logged out.");
@@ -69,7 +79,7 @@ async function listCommand(args: string[]): Promise<void> {
   };
   const rows = await withReadClient((client) => listCurrentUserJobs(client, options));
   if (args.includes("--json")) emit(rows);
-  else console.log(renderJobs(rows));
+  else console.log(renderJobs(rows, args.includes("--wide")));
 }
 
 async function groupsCommand(args: string[]): Promise<void> {
@@ -77,14 +87,17 @@ async function groupsCommand(args: string[]): Promise<void> {
   const project = option(args, "--project") ?? option(args, "-p");
   const rows = await withReadClient((client) => getDistributedTrainingCapacity(client, project));
   if (args.includes("--json")) emit(rows);
-  else console.log(renderCapacity(rows));
+  else {
+    console.log(renderCapacity(rows, args.includes("--wide")));
+    if (!project) console.log("\nTip: use --project PROJECT to show GPU sizes you are allowed to request.");
+  }
 }
 
 async function projectsCommand(args: string[]): Promise<void> {
   if (args.includes("--help") || args.includes("-h")) return printProjectsHelp();
   const rows = await withReadClient(listParticipatingProjects);
   if (args.includes("--json")) emit(rows);
-  else console.log(renderProjects(rows));
+  else console.log(renderProjects(rows, args.includes("--wide")));
 }
 
 async function cancelCommand(args: string[]): Promise<void> {

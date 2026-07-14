@@ -18,4 +18,9 @@ describe("terminal table", () => {
     expect(output).toContain("…");
     expect(output).toContain("      -55");
   });
+
+  test("wide mode preserves complete copyable values", () => {
+    const value = "训练区-H200-3号机房-2-cuda12.8版本";
+    expect(renderTable(["GROUP"], [[value]], { maxWidths: [8], wide: true })).toContain(value);
+  });
 });

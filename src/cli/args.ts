@@ -11,7 +11,19 @@ export function parseSubmitOptions(args: string[]): SubmitOptions {
   const inlineCommand = option(args, "--command") ?? option(args, "-c");
   const commandFile = option(args, "--command-file");
   if (inlineCommand && commandFile) throw new SiimitError("Use either --command or --command-file, not both.");
-  if (!inlineCommand && !commandFile) throw new SiimitError("--command or --command-file is required.");
+  const missing = [
+    ...(!(option(args, "--name") ?? option(args, "-n")) ? ["--name"] : []),
+    ...(!inlineCommand && !commandFile ? ["--command or --command-file"] : []),
+    ...(!(option(args, "--project") ?? option(args, "-p")) ? ["--project"] : []),
+    ...(!option(args, "--group") ? ["--group"] : []),
+    ...(!option(args, "--gpus") ? ["--gpus"] : []),
+    ...(!option(args, "--image") ? ["--image"] : []),
+  ];
+  if (missing.length) {
+    throw new SiimitError(
+      `Missing required options:\n${missing.map((name) => `  ${name}`).join("\n")}\n\nRun 'siimit submit --help' for usage.`,
+    );
+  }
   return {
     name: requiredOption(args, "--name", "-n"),
     command: commandFile ? commandFileCommand(commandFile) : inlineCommand!,

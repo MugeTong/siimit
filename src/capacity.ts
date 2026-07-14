@@ -91,7 +91,7 @@ export async function getDistributedTrainingCapacity(
   return rows.sort((left, right) => right.highPriority - left.highPriority);
 }
 
-export function renderCapacity(rows: CapacityRow[]): string {
+export function renderCapacity(rows: CapacityRow[], wide = false): string {
   if (!rows.length) return "No GPU capacity found in 分布式训练空间.";
   const header = ["GPU TYPE", "COMPUTE GROUP", "GPU SIZES", "FREE", "OVERCOMMITTED", "PREEMPTIBLE", "HIGH PRI", "USED", "TOTAL"];
   const values = rows.map((row) => [
@@ -132,6 +132,7 @@ export function renderCapacity(rows: CapacityRow[]): string {
     renderTable(header, values, {
       maxWidths: [22, 32, 11, 6, 13, 11, 8, 8, 7],
       align: ["left", "left", "right", "right", "right", "right", "right", "right", "right"],
+      wide,
     }),
   ].join("\n");
 }

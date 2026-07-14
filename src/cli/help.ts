@@ -1,19 +1,19 @@
 import { DEFAULT_BASE_URL } from "../config";
 
 export function printHelp(version: string): void {
-  console.log(`siimit ${version}\n\nUsage:\n  siimit version\n  siimit login [--username ID] [--base-url URL]\n  siimit logout [--forget]\n  siimit groups [--json]\n  siimit projects [--json]\n  siimit images [--json]\n  siimit ls [OPTIONS]\n  siimit get <job-id> [--json | --raw]\n  siimit submit [OPTIONS]\n  siimit cancel <job-id>\n  siimit remove <job-id>\n\nRun a command with --help for details.\n\nEnvironment:\n  INSPIRE_USERNAME  Platform login ID\n  INSPIRE_PASSWORD  Platform password\n  INSPIRE_BASE_URL  Platform URL (default: ${DEFAULT_BASE_URL})\n  SIIMIT_CONFIG_DIR Override ~/.config/siimit`);
+  console.log(`siimit ${version}\n\nUsage:\n  siimit version\n  siimit login [--username ID] [--base-url URL]\n  siimit logout [--forget]\n  siimit config <path|show>\n  siimit projects [--wide | --json]\n  siimit groups [--project PROJECT] [--wide | --json]\n  siimit images [--wide | --json]\n  siimit ls [OPTIONS]\n  siimit get <job-id> [--json | --raw]\n  siimit submit [OPTIONS]\n  siimit cancel <job-id>\n  siimit remove <job-id>\n\nGetting started:\n  siimit projects --wide\n  siimit groups --project PROJECT --wide\n  siimit images\n  siimit submit --help\n  siimit submit --dry-run ...\n\nRun a command with --help for details.\n\nEnvironment:\n  INSPIRE_USERNAME  Platform login ID\n  INSPIRE_PASSWORD  Platform password\n  INSPIRE_BASE_URL  Platform URL (default: ${DEFAULT_BASE_URL})\n  SIIMIT_CONFIG_DIR Override ~/.config/siimit`);
 }
 
 export function printGroupsHelp(): void {
-  console.log(`Usage: siimit groups [--project PROJECT] [--json]\n\nShow GPU compute groups and live capacity for 分布式训练空间 only.\nUse --project (or -p) to show GPU sizes allowed for that project at its maximum priority.\n\nColumns:\n  GPU SIZES      Per-node GPU counts allowed for the selected project\n  FREE           Unused GPUs (never negative)\n  OVERCOMMITTED  Usage beyond reported total\n  PREEMPTIBLE    GPUs occupied by low-priority jobs\n  HIGH PRI       Capacity potentially available to high-priority jobs after preemption\n  USED           Currently used GPUs\n  TOTAL          Total GPUs reported by the platform`);
+  console.log(`Usage: siimit groups [--project PROJECT] [--wide | --json]\n\nShow GPU compute groups and live capacity for 分布式训练空间 only.\nUse --project (or -p) to show GPU sizes allowed for that project at its maximum priority.\nUse --wide to print complete, copyable group names.\n\nColumns:\n  GPU SIZES      Per-node GPU counts allowed for the selected project\n  FREE           Unused GPUs (never negative)\n  OVERCOMMITTED  Usage beyond reported total\n  PREEMPTIBLE    GPUs occupied by low-priority jobs\n  HIGH PRI       Capacity potentially available to high-priority jobs after preemption\n  USED           Currently used GPUs\n  TOTAL          Total GPUs reported by the platform`);
 }
 
 export function printProjectsHelp(): void {
-  console.log("Usage: siimit projects [--json]\n\nList projects visible to the current user, including maximum priority and available point-balance fields reported by the platform.");
+  console.log("Usage: siimit projects [--wide | --json]\n\nList visible projects. Use --wide to print complete, copyable names and IDs.");
 }
 
 export function printListHelp(): void {
-  console.log(`Usage: siimit ls [OPTIONS]\n\nList the current user's training jobs across accessible workspaces.\n\nOptions:\n  --workspace NAME    Exact workspace name or ws-... ID\n  --status STATUS     RUNNING, QUEUING, SUCCEEDED, FAILED, CANCELLED, or API value\n  --keyword TEXT      Server-side keyword filter\n  --limit NUMBER      Maximum rows after merging workspaces (default: 20)\n  --json              Print structured JSON\n  -h, --help          Show this help`);
+  console.log(`Usage: siimit ls [OPTIONS]\n\nList the current user's training jobs across accessible workspaces.\n\nOptions:\n  --workspace NAME    Exact workspace name or ws-... ID\n  --status STATUS     RUNNING, QUEUING, SUCCEEDED, FAILED, CANCELLED, or API value\n  --keyword TEXT      Server-side keyword filter\n  --limit NUMBER      Maximum rows after merging workspaces (default: 20)\n  --wide              Print complete, copyable values\n  --json              Print structured JSON\n  -h, --help          Show this help`);
 }
 
 export function printSubmitHelp(): void {

@@ -12,11 +12,11 @@ export async function listVisibleImages(
   return listPrivateImages(client, workspaceId, config);
 }
 
-export function renderImages(images: PrivateImage[]): string {
+export function renderImages(images: PrivateImage[], wide = false): string {
   if (!images.length) return "No private images found.";
   return renderTable(
     ["NAME", "VERSION", "STATUS", "ADDRESS"],
     images.map((image) => [image.name, image.version, image.status, image.address]),
-    { maxWidths: [28, 18, 12, 80] },
+    { maxWidths: [28, 18, 12, 80], wide },
   );
 }

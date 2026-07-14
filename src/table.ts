@@ -5,10 +5,10 @@ export type Alignment = "left" | "right";
 export function renderTable(
   headers: string[],
   rows: string[][],
-  options: { maxWidths?: number[]; align?: Alignment[] } = {},
+  options: { maxWidths?: number[]; align?: Alignment[]; wide?: boolean } = {},
 ): string {
   const widths = headers.map((header, index) => Math.min(
-    options.maxWidths?.[index] ?? 32,
+    options.wide ? Number.POSITIVE_INFINITY : options.maxWidths?.[index] ?? 32,
     Math.max(stringWidth(header), ...rows.map((row) => stringWidth(row[index] ?? ""))),
   ));
   const line = (columns: string[]) => columns
@@ -41,4 +41,3 @@ function pad(value: string, width: number, alignment: Alignment): string {
   const spaces = " ".repeat(Math.max(0, width - stringWidth(value)));
   return alignment === "right" ? spaces + value : value + spaces;
 }
-
