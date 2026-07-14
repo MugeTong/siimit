@@ -292,12 +292,11 @@ export function expandLogFileTemplate(template: string, name: string, now = new 
   return template.replaceAll("{name}", name).replaceAll("{timestamp}", timestamp);
 }
 
-function wrapCommand(command: string, logFile?: string, append = false): string {
+export function wrapCommand(command: string, logFile?: string, append = false): string {
   if (logFile) {
-    const quotedPath = shellQuote(logFile);
     const redirect = append ? ">>" : ">";
-    const script = `LOG_FILE=${quotedPath}; mkdir -p -- "$(dirname -- "$LOG_FILE")" && ( ${command} ) ${redirect} "$LOG_FILE" 2>&1`;
-    return `bash -c ${shellQuote(script)}`;
+    const script = `log_file=$1; user_command=$2; log_dir=\${log_file%/*}; if [ "$log_dir" != "$log_file" ]; then mkdir -p -- "$log_dir" || exit; fi; exec bash -c "$user_command" ${redirect}"$log_file" 2>&1`;
+    return `bash -c ${shellQuote(script)} siimit-wrapper ${shellQuote(logFile)} ${shellQuote(command)}`;
   }
   const trimmed = command.trim();
   if (/^(bash|sh|\/bin\/bash|\/bin\/sh) -c /.test(trimmed)) return command;
