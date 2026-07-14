@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { InspireClient } from "../src/platform/client";
-import { listCurrentUserJobs, renderJobs } from "../src/jobs";
+import { listCurrentUserJobs, renderJobs } from "../src/domain/jobs";
 
 class FakeClient {
   async whoami(): Promise<Record<string, unknown>> {

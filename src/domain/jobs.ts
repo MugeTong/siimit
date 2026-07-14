@@ -1,10 +1,10 @@
-import type { InspireClient } from "./platform/client";
-import { ApiError, ConfigurationError } from "./errors";
-import { listWorkspaces, resolveWorkspace } from "./platform/catalog/workspaces";
-import { renderTable } from "./table";
-import { displayTime, normalizeTime } from "./time";
-import { asRecord as record, records as arrayOfRecords } from "./shared/records";
-import { formatFrameworkResource } from "./shared/resource";
+import type { InspireClient } from "../platform/client";
+import { ApiError, ConfigurationError } from "../errors";
+import { listWorkspaces, resolveWorkspace } from "../platform/catalog/workspaces";
+import { renderTable } from "../shared/table";
+import { displayTime, normalizeTime } from "../shared/time";
+import { asRecord as record, records as arrayOfRecords } from "../shared/records";
+import { formatFrameworkResource } from "../shared/resource";
 
 export interface ListOptions {
   workspace?: string;

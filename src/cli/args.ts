@@ -1,6 +1,6 @@
 import { SiimitError } from "../errors";
-import type { SubmitOptions } from "../submission";
-import { commandFileCommand } from "../shell";
+import type { SubmitOptions } from "../domain/submission";
+import { commandFileCommand } from "../shared/shell";
 
 export function option(args: string[], name: string): string | undefined {
   const index = args.indexOf(name);

@@ -5,17 +5,17 @@ The CLI is organized around explicit dependency directions:
 ```text
 index.ts
   -> cli/commands + cli/runtime
-      -> domain services (submission, jobs, projects, capacity)
+      -> domain services (submission, jobs, projects, groups, images)
           -> platform client (client, auth, http)
       -> local infrastructure (config)
 ```
 
 ## Module boundaries
 
-- `src/index.ts`: command routing and small presentation adapters only.
+- `src/index.ts`: command routing only.
 - `src/cli/`: argument parsing, help, authenticated execution, and command orchestration.
 - `src/shared/`: data-shape helpers with no platform or CLI dependencies.
-- `src/submission.ts`, `jobs.ts`, `projects.ts`, `images.ts`, `capacity.ts`, `job-actions.ts`: domain operations and normalization.
+- `src/domain/`: business operations, normalization, and terminal rendering by user-facing concept.
 - `src/platform/client.ts`, `http.ts`, `auth.ts`: Inspire transport and authentication.
 - `src/platform/catalog/`: focused platform lookups for workspaces, projects, quotas, and private images.
 - `src/config.ts`: schemas plus credential/session/application configuration persistence.

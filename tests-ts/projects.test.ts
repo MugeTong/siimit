@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { InspireClient } from "../src/platform/client";
-import { listParticipatingProjects, renderProjects } from "../src/projects";
+import { listParticipatingProjects, renderProjects } from "../src/domain/projects";
 
 class FakeClient {
   async postJson(): Promise<Record<string, unknown>> {

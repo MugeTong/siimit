@@ -1,6 +1,6 @@
 import { isAbsolute } from "node:path";
 
-import { ConfigurationError } from "./errors";
+import { ConfigurationError } from "../errors";
 
 export function commandFileCommand(path: string): string {
   if (!isAbsolute(path)) {

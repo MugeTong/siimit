@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { InspireClient } from "../src/platform/client";
-import { cancelJob, getJob, removeJob, validateJobId } from "../src/job-actions";
+import { cancelJob, getJob, removeJob, validateJobId } from "../src/domain/job-actions";
 
 class FakeClient {
   calls: Array<{ path: string; body: Record<string, unknown> }> = [];

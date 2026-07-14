@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { DEFAULT_APP_CONFIG } from "../src/config";
-import { listVisibleImages, renderImages } from "../src/images";
+import { listVisibleImages, renderImages } from "../src/domain/images";
 import type { InspireClient } from "../src/platform/client";
 
 class FakeClient {

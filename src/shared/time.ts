@@ -1,6 +1,6 @@
 export interface NormalizedTime {
-  iso: string;
-  milliseconds: number | null;
+  readonly iso: string;
+  readonly milliseconds: number | null;
 }
 
 export function normalizeTime(value: unknown): NormalizedTime {

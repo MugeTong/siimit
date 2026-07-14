@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { InspireClient } from "../src/platform/client";
-import { buildSubmissionPayload } from "../src/submission";
+import { buildSubmissionPayload } from "../src/domain/submission";
 import { DEFAULT_APP_CONFIG } from "../src/config";
 
 class FakeClient {

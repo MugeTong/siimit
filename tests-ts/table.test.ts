@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import stringWidth from "string-width";
 
-import { renderTable } from "../src/table";
+import { renderTable } from "../src/shared/table";
 
 describe("terminal table", () => {
   test("aligns Chinese text, ellipsis, negative numbers, and wide values", () => {

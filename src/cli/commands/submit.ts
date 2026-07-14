@@ -3,7 +3,7 @@ import { access } from "node:fs/promises";
 import { InspireClient } from "../../platform/client";
 import { loadAppConfig } from "../../config";
 import { AuthenticationError } from "../../errors";
-import { buildSubmissionPayload } from "../../submission";
+import { buildSubmissionPayload } from "../../domain/submission";
 import { option, parseSubmitOptions } from "../args";
 import { printSubmitHelp } from "../help";
 import { loginWithSavedCredentials, sessionOrLogin } from "../runtime";

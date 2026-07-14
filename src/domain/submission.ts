@@ -1,10 +1,10 @@
-import type { AppConfig } from "./config";
-import type { InspireClient } from "./platform/client";
-import { wrapShellCommand } from "./shell";
-import { resolvePrivateImage } from "./platform/catalog/images";
-import { resolveProject } from "./platform/catalog/projects";
-import { resolveQuota } from "./platform/catalog/quotas";
-import { resolveWorkspace } from "./platform/catalog/workspaces";
+import type { AppConfig } from "../config";
+import type { InspireClient } from "../platform/client";
+import { wrapShellCommand } from "../shared/shell";
+import { resolvePrivateImage } from "../platform/catalog/images";
+import { resolveProject } from "../platform/catalog/projects";
+import { resolveQuota } from "../platform/catalog/quotas";
+import { resolveWorkspace } from "../platform/catalog/workspaces";
 
 export interface SubmitOptions {
   name: string;

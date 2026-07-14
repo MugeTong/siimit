@@ -1,11 +1,11 @@
-import type { InspireClient } from "./platform/client";
-import { ConfigurationError } from "./errors";
-import { resolveProject } from "./platform/catalog/projects";
-import { resolveWorkspace } from "./platform/catalog/workspaces";
-import { renderTable } from "./table";
-import { asRecord as record, records as arrayOfRecords } from "./shared/records";
+import type { InspireClient } from "../platform/client";
+import { ConfigurationError } from "../errors";
+import { resolveProject } from "../platform/catalog/projects";
+import { resolveWorkspace } from "../platform/catalog/workspaces";
+import { renderTable } from "../shared/table";
+import { asRecord as record, records as arrayOfRecords } from "../shared/records";
 
-export interface CapacityRow {
+export interface GroupRow {
   group: string;
   gpuType: string;
   gpuSizes: number[] | null;
@@ -17,11 +17,11 @@ export interface CapacityRow {
   total: number;
 }
 
-export async function getDistributedTrainingCapacity(
+export async function listGroups(
   client: InspireClient,
   workspace: string,
   projectName?: string,
-): Promise<CapacityRow[]> {
+): Promise<GroupRow[]> {
   const workspaceId = await resolveWorkspace(client, workspace);
   const project = projectName
     ? await resolveProject(client, workspaceId, projectName)
@@ -38,7 +38,7 @@ export async function getDistributedTrainingCapacity(
     );
   }
 
-  const rows: CapacityRow[] = [];
+  const rows: GroupRow[] = [];
   let priceRequestCount = 0;
   for (const group of groups) {
     const groupId = String(group.logic_compute_group_id ?? group.id ?? "");
@@ -58,7 +58,7 @@ export async function getDistributedTrainingCapacity(
     const gpuInfo = record(gpuStats[0]?.gpu_info);
     let gpuSizes: number[] | null = null;
     if (project) {
-      // This pricing endpoint is rate-limited more aggressively than capacity.
+      // This pricing endpoint is rate-limited more aggressively than group availability.
       if (priceRequestCount > 0) await delay(750);
       priceRequestCount += 1;
       const prices = await client.postJson("/api/v1/resource_prices/logic_compute_groups", {
@@ -90,7 +90,7 @@ export async function getDistributedTrainingCapacity(
   return rows.sort((left, right) => right.highPriority - left.highPriority);
 }
 
-export function renderCapacity(rows: CapacityRow[], workspace: string, wide = false): string {
+export function renderGroups(rows: GroupRow[], workspace: string, wide = false): string {
   if (!rows.length) return `No GPU capacity found in ${workspace}.`;
   const header = ["GPU TYPE", "COMPUTE GROUP", "GPU SIZES", "FREE", "OVERCOMMITTED", "PREEMPTIBLE", "HIGH PRI", "USED", "TOTAL"];
   const values = rows.map((row) => [

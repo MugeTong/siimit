@@ -1,6 +1,8 @@
 import stringWidth from "string-width";
 
-export type Alignment = "left" | "right";
+export type Alignment =
+  | "left"
+  | "right";
 
 export function renderTable(
   headers: string[],

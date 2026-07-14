@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { InspireClient } from "../src/platform/client";
-import { getDistributedTrainingCapacity, renderCapacity } from "../src/capacity";
+import { listGroups, renderGroups } from "../src/domain/groups";
 
 class FakeClient {
   constructor(private readonly used = 10, private readonly lowPriority = 2) {}
@@ -54,9 +54,9 @@ class FakeClient {
   }
 }
 
-describe("distributed training capacity", () => {
-  test("calculates live and high-priority GPU capacity", async () => {
-    const rows = await getDistributedTrainingCapacity(
+describe("GPU groups", () => {
+  test("calculates live and high-priority availability", async () => {
+    const rows = await listGroups(
       new FakeClient() as unknown as InspireClient,
       "分布式训练空间",
       "课程项目",
@@ -72,11 +72,11 @@ describe("distributed training capacity", () => {
       preemptible: 2,
       total: 16,
     }]);
-    expect(renderCapacity(rows, "分布式训练空间")).toContain("Workspace: 分布式训练空间");
+    expect(renderGroups(rows, "分布式训练空间")).toContain("Workspace: 分布式训练空间");
   });
 
   test("separates overcommit from reclaimable high-priority capacity", async () => {
-    const rows = await getDistributedTrainingCapacity(
+    const rows = await listGroups(
       new FakeClient(20, 8) as unknown as InspireClient,
       "分布式训练空间",
       "课程项目",

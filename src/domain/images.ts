@@ -1,8 +1,8 @@
-import type { AppConfig } from "./config";
-import { listPrivateImages, type PrivateImage } from "./platform/catalog/images";
-import { resolveWorkspace } from "./platform/catalog/workspaces";
-import type { InspireClient } from "./platform/client";
-import { renderTable } from "./table";
+import type { AppConfig } from "../config";
+import { listPrivateImages, type PrivateImage } from "../platform/catalog/images";
+import { resolveWorkspace } from "../platform/catalog/workspaces";
+import type { InspireClient } from "../platform/client";
+import { renderTable } from "../shared/table";
 
 export async function listVisibleImages(
   client: InspireClient,
