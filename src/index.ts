@@ -10,7 +10,7 @@ import {
   saveSession,
 } from "./config";
 import { SiimitError } from "./errors";
-import { loadJobMetadata, removeJobArtifacts } from "./storage/job-metadata";
+import { extractLogFile } from "./logging/wrapper";
 import { listCurrentUserJobs, renderJobs } from "./jobs";
 import { cancelJob, getJob, removeJob, renderJob, validateJobId } from "./job-actions";
 import { listParticipatingProjects, renderProjects } from "./projects";
@@ -104,7 +104,6 @@ async function removeCommand(args: string[]): Promise<void> {
   }
   const jobId = validateJobId(args[0]);
   const result = await withMutationClient((client) => removeJob(client, jobId));
-  await removeJobArtifacts(jobId);
   emit({ removed: true, job_id: jobId, ...result });
 }
 
@@ -116,7 +115,7 @@ async function getCommand(args: string[]): Promise<void> {
   const jobId = validateJobId(args[0]);
   const job = await withReadClient((client) => getJob(client, jobId));
   if (args.includes("--raw")) return emit(job.raw);
-  const metadata = await loadJobMetadata(jobId);
+  const logFile = extractLogFile(job.raw.command);
   if (args.includes("--json")) emit({
     jobId: job.jobId,
     name: job.name,
@@ -134,7 +133,7 @@ async function getCommand(args: string[]): Promise<void> {
     exit_code: job.exitCode,
     failure_reason: job.failureReason,
     node: job.node,
-    log_file: metadata.log_file ?? null,
+    log_file: logFile ?? null,
   });
   else console.log(renderJob(job));
 }

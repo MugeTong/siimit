@@ -1,34 +1,33 @@
-import { chmod, mkdir, writeFile } from "node:fs/promises";
-import { basename, dirname, isAbsolute, join } from "node:path";
+import { isAbsolute } from "node:path";
 
 import { ConfigurationError } from "../errors";
-
-export interface LogWrapper {
-  path: string;
-  script: string;
-  command: string;
-}
 
 export function expandLogFileTemplate(template: string, name: string, now = new Date()): string {
   const timestamp = now.toISOString().replaceAll(":", "-");
   return template.replaceAll("{name}", name).replaceAll("{timestamp}", timestamp);
 }
 
-export function buildLogWrapper(logFile: string, command: string, append: boolean): LogWrapper {
+export function buildLoggedCommand(logFile: string, command: string, append: boolean): string {
   if (!isAbsolute(logFile)) {
     throw new ConfigurationError("--log-file must be an absolute path on a shared filesystem.");
   }
-  const stem = basename(logFile).replace(/[^a-zA-Z0-9._-]/g, "_");
-  const path = join(dirname(logFile), ".siimit", "wrappers", `${stem}.sh`);
   const redirect = append ? ">>" : ">";
-  const script = `#!/usr/bin/env bash\nlog_file=${shellQuote(logFile)}\nnode=\${HOSTNAME:-unknown}\nrank=\${RANK:-\${LOCAL_RANK:-0}}\nlog_file=\${log_file//\\{node\\}/$node}\nlog_file=\${log_file//\\{rank\\}/$rank}\nlog_dir=\${log_file%/*}\nif [ "$log_dir" != "$log_file" ]; then mkdir -p -- "$log_dir" || exit; fi\nexec bash -c ${shellQuote(command)} ${redirect}"$log_file" 2>&1\n`;
-  return { path, script, command: `bash ${shellQuote(path)}` };
+  const marker = Buffer.from(logFile, "utf8").toString("base64");
+  const runtimePath = shellDoubleQuote(logFile)
+    .replaceAll("{node}", "${HOSTNAME:-unknown}")
+    .replaceAll("{rank}", "${RANK:-${LOCAL_RANK:-0}}");
+  const script = `: "siimit-log:${marker}"; log_file="${runtimePath}"; log_dir="\${log_file%/*}"; mkdir -p -- "$log_dir" || exit; {\n${command}\n} ${redirect}"$log_file" 2>&1`;
+  return `bash -c ${shellQuote(script)}`;
 }
 
-export async function writeLogWrapper(wrapper: LogWrapper): Promise<void> {
-  await mkdir(dirname(wrapper.path), { recursive: true, mode: 0o700 });
-  await writeFile(wrapper.path, wrapper.script, { mode: 0o700 });
-  await chmod(wrapper.path, 0o700);
+export function extractLogFile(command: unknown): string | undefined {
+  const marker = /siimit-log:([A-Za-z0-9+/=]+)/.exec(String(command ?? ""))?.[1];
+  if (!marker) return undefined;
+  try {
+    return Buffer.from(marker, "base64").toString("utf8");
+  } catch {
+    return undefined;
+  }
 }
 
 export function commandFileCommand(path: string): string {
@@ -46,4 +45,8 @@ export function wrapShellCommand(command: string): string {
 
 function shellQuote(value: string): string {
   return `'${value.replaceAll("'", "'\\''")}'`;
+}
+
+function shellDoubleQuote(value: string): string {
+  return value.replaceAll("\\", "\\\\").replaceAll('"', '\\"').replaceAll("$", "\\$").replaceAll("`", "\\`");
 }

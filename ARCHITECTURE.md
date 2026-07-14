@@ -15,7 +15,6 @@ index.ts
 - `src/index.ts`: command routing and small presentation adapters only.
 - `src/cli/`: argument parsing, help, authenticated execution, and command orchestration.
 - `src/logging/`: shared-filesystem wrapper script generation.
-- `src/storage/`: local task metadata. Platform data does not belong here.
 - `src/shared/`: data-shape helpers with no platform or CLI dependencies.
 - `src/submission.ts`, `jobs.ts`, `projects.ts`, `images.ts`, `capacity.ts`, `job-actions.ts`: domain operations and normalization.
 - `src/platform/client.ts`, `http.ts`, `auth.ts`: Inspire transport and authentication.
@@ -27,5 +26,5 @@ index.ts
 1. A new CLI command gets a handler in `src/cli/commands/`; `index.ts` only routes to it.
 2. HTTP details stay behind `InspireClient` or a domain service; command handlers do not call `fetch`.
 3. Platform response normalization happens in domain modules, never in terminal rendering code.
-4. Local files are written through `src/storage/` or another focused infrastructure module.
+4. Persistent local files are limited to configuration and authentication state.
 5. Shared helpers must not import CLI, storage, or platform modules.

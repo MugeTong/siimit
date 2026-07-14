@@ -1,10 +1,9 @@
-import { access, rm } from "node:fs/promises";
+import { access } from "node:fs/promises";
 
 import { InspireClient } from "../../platform/client";
 import { loadAppConfig } from "../../config";
-import { saveJobMetadata } from "../../storage/job-metadata";
 import { AuthenticationError, SiimitError } from "../../errors";
-import { buildLogWrapper, expandLogFileTemplate, writeLogWrapper, type LogWrapper } from "../../logging/wrapper";
+import { buildLoggedCommand, expandLogFileTemplate } from "../../logging/wrapper";
 import { buildSubmissionPayload } from "../../submission";
 import { option, parseSubmitOptions } from "../args";
 import { printSubmitHelp } from "../help";
@@ -28,10 +27,11 @@ export async function runSubmit(args: string[]): Promise<void> {
     throw new SiimitError("Multi-node logging requires {node} or {rank} in --log-file to prevent concurrent writes.");
   }
 
-  let wrapper: LogWrapper | undefined;
-  if (logFile) wrapper = buildLogWrapper(logFile, options.command, options.appendLog === true);
   const { logFile: _logFile, appendLog: _appendLog, ...baseOptions } = options;
-  const resolvedOptions = { ...baseOptions, ...(wrapper ? { command: wrapper.command } : {}) };
+  const resolvedOptions = {
+    ...baseOptions,
+    ...(logFile ? { command: buildLoggedCommand(logFile, options.command, options.appendLog === true) } : {}),
+  };
 
   let client = new InspireClient(await sessionOrLogin());
   let payload: Record<string, unknown>;
@@ -47,26 +47,12 @@ export async function runSubmit(args: string[]): Promise<void> {
     return emit({
       dry_run: true,
       log_file: logFile ?? null,
-      wrapper_file: wrapper?.path ?? null,
       append_log: options.appendLog === true,
       payload,
     });
   }
 
-  if (wrapper) await writeLogWrapper(wrapper);
-  let submission;
-  try {
-    submission = await client.submit(payload);
-  } catch (error) {
-    if (wrapper) await rm(wrapper.path, { force: true }).catch(() => {});
-    throw error;
-  }
-  if (submission.jobId && logFile) {
-    await saveJobMetadata(submission.jobId, {
-      log_file: logFile,
-      ...(wrapper ? { wrapper_file: wrapper.path } : {}),
-    });
-  }
+  const submission = await client.submit(payload);
   const framework = firstFramework(submission.result.framework_config)
     ?? firstFramework(payload.framework_config);
   emit({

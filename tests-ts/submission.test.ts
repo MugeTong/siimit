@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 
 import type { InspireClient } from "../src/platform/client";
 import { buildSubmissionPayload } from "../src/submission";
-import { buildLogWrapper, expandLogFileTemplate, writeLogWrapper } from "../src/logging/wrapper";
+import { buildLoggedCommand, expandLogFileTemplate, extractLogFile } from "../src/logging/wrapper";
 import { DEFAULT_APP_CONFIG } from "../src/config";
 
 class FakeClient {
@@ -98,21 +98,21 @@ describe("submission payload", () => {
     )).toBe("runs/densecat-2026-07-14T12-13-30.000Z.log");
   });
 
-  test("logs through positional parameters and preserves exit status", async () => {
+  test("logs with one generated shell command and preserves exit status", async () => {
     const directory = await mkdtemp(join(tmpdir(), "siimit log "));
     const logFile = join(directory, "nested dir", "task.log");
     try {
-      const firstWrapper = buildLogWrapper(logFile, "printf 'first\\n'; exit 7", false);
-      await writeLogWrapper(firstWrapper);
-      const first = Bun.spawnSync(["bash", firstWrapper.path]);
+      const firstCommand = buildLoggedCommand(logFile, "printf 'first\\n'; exit 7", false);
+      const first = Bun.spawnSync(["bash", "-c", firstCommand]);
       expect(first.exitCode).toBe(7);
       expect(await readFile(logFile, "utf8")).toBe("first\n");
+      expect(extractLogFile(firstCommand)).toBe(logFile);
 
-      const secondWrapper = buildLogWrapper(logFile, "printf 'second\\n'", true);
-      await writeLogWrapper(secondWrapper);
-      const second = Bun.spawnSync(["bash", secondWrapper.path]);
+      const secondCommand = buildLoggedCommand(logFile, "printf 'second\\n'", true);
+      const second = Bun.spawnSync(["bash", "-c", secondCommand]);
       expect(second.exitCode).toBe(0);
       expect(await readFile(logFile, "utf8")).toBe("first\nsecond\n");
+      expect(await Array.fromAsync(new Bun.Glob("**/.siimit/**").scan({ cwd: directory }))).toEqual([]);
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
