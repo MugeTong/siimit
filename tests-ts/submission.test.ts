@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 import type { InspireClient } from "../src/client";
-import { buildSubmissionPayload, expandLogFileTemplate, wrapCommand } from "../src/submission";
+import { buildLogWrapper, buildSubmissionPayload, expandLogFileTemplate, writeLogWrapper } from "../src/submission";
 import { DEFAULT_APP_CONFIG } from "../src/config";
 
 class FakeClient {
@@ -73,7 +73,6 @@ describe("submission payload", () => {
       group: "H200训练区",
       gpus: 4,
       nodes: 3,
-      logFile: "runs/submission-logs/train a.log",
       image: "train:latest",
       excludeNodes: ["node-1"],
     }, { ...DEFAULT_APP_CONFIG, workspace: "训练空间", nodes: 2 });
@@ -83,11 +82,6 @@ describe("submission payload", () => {
     expect(payload.logic_compute_group_id).toBe("lcg-1");
     expect(payload.task_priority).toBe(7);
     expect(payload.exclude_nodes).toEqual(["node-1"]);
-    expect(payload.command).toContain("log_file=$1");
-    expect(payload.command).toContain("user_command=$2");
-    expect(payload.command).not.toContain("$(dirname");
-    expect(payload.command).toContain(">\"$log_file\" 2>&1");
-    expect(payload.command).toContain("runs/submission-logs/train a.log");
     const config = (payload.framework_config as Record<string, unknown>[])[0]!;
     expect(config.instance_count).toBe(3);
     expect(config.image).toBe("registry.internal/team/train:latest");
@@ -107,11 +101,15 @@ describe("submission payload", () => {
     const directory = await mkdtemp(join(tmpdir(), "siimit log "));
     const logFile = join(directory, "nested dir", "task.log");
     try {
-      const first = Bun.spawnSync(["bash", "-c", wrapCommand("printf \'first\\n\'; exit 7", logFile)]);
+      const firstWrapper = buildLogWrapper(logFile, "printf 'first\\n'; exit 7", false);
+      await writeLogWrapper(firstWrapper);
+      const first = Bun.spawnSync(["bash", firstWrapper.path]);
       expect(first.exitCode).toBe(7);
       expect(await readFile(logFile, "utf8")).toBe("first\n");
 
-      const second = Bun.spawnSync(["bash", "-c", wrapCommand("printf \'second\\n\'", logFile, true)]);
+      const secondWrapper = buildLogWrapper(logFile, "printf 'second\\n'", true);
+      await writeLogWrapper(secondWrapper);
+      const second = Bun.spawnSync(["bash", secondWrapper.path]);
       expect(second.exitCode).toBe(0);
       expect(await readFile(logFile, "utf8")).toBe("first\nsecond\n");
     } finally {

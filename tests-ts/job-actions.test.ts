@@ -19,6 +19,9 @@ class FakeClient {
         priority_level: "HIGH",
         task_priority: 0,
         created_at: "1784036010000",
+        running_time_ms: "65000",
+        finished_at: "1784036075000",
+        timeline: { run: "1784036010000", finished: "1784036075000" },
         framework_config: [{ gpu_count: 8, shm_gi: 0, resource_spec_price: { gpu_type: "H100" } }],
       },
     };
@@ -63,6 +66,10 @@ describe("job mutations", () => {
     expect(job.priorityLevel).toBe("HIGH");
     expect(job.shmGiB).toBe("platform_default");
     expect(job.createdAt).toBe("2026-07-14T13:33:30.000Z");
+    expect(job.startedAt).toBe("2026-07-14T13:33:30.000Z");
+    expect(job.finishedAt).toBe("2026-07-14T13:34:35.000Z");
+    expect(job.runningTime).toBe("00:01:05");
+    expect(job.exitCode).toBeNull();
   });
 
   test("treats repeated removal as success", async () => {

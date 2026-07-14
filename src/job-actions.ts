@@ -14,6 +14,12 @@ export interface JobDetail {
   shmGiB: number | "platform_default" | null;
   createdAt: string;
   createdAtMs: number | null;
+  startedAt: string;
+  finishedAt: string;
+  runningTime: string;
+  exitCode: number | null;
+  failureReason: string | null;
+  node: string | null;
   raw: Record<string, unknown>;
 }
 
@@ -85,6 +91,13 @@ export async function getJob(client: InspireClient, jobId: string): Promise<JobD
   const submittedPriority = integer(raw.task_priority);
   const namedPriority = integer(raw.priority_name);
   const shm = Number(framework.shm_gi);
+  const timeline = record(raw.timeline) ?? {};
+  const started = normalizeTime(timeline.run ?? raw.started_at);
+  const finished = normalizeTime(timeline.finished ?? raw.finished_at);
+  const runningMilliseconds = Number(raw.running_time_ms ?? 0);
+  const nodeInfo = arrayOfRecords(raw.node_infos)[0];
+  const exitCode = nullableInteger(raw.exit_code ?? nodeInfo?.exit_code);
+  const failureReason = nullableString(raw.failure_reason ?? raw.failed_reason ?? nodeInfo?.failure_reason);
   return {
     jobId: String(raw.job_id ?? raw.id ?? jobId),
     name: String(raw.name ?? ""),
@@ -96,20 +109,44 @@ export async function getJob(client: InspireClient, jobId: string): Promise<JobD
     shmGiB: Number.isFinite(shm) ? (shm === 0 ? "platform_default" : shm) : null,
     createdAt: created.iso,
     createdAtMs: created.milliseconds,
+    startedAt: started.iso,
+    finishedAt: finished.iso,
+    runningTime: formatDuration(runningMilliseconds),
+    exitCode,
+    failureReason,
+    node: nullableString(nodeInfo?.node_name ?? nodeInfo?.name),
     raw,
   };
 }
 
 export function renderJob(job: JobDetail): string {
   return renderTable(
-    ["ID", "NAME", "STATUS", "PRIORITY", "PROJECT", "RESOURCE", "CREATED"],
-    [[job.jobId, job.name, job.status, job.taskPriority == null ? "-" : String(job.taskPriority), job.project, job.resource, displayTime(job.createdAt)]],
+    ["ID", "NAME", "STATUS", "EXIT", "PRIORITY", "PROJECT", "RESOURCE", "CREATED"],
+    [[job.jobId, job.name, job.status, job.exitCode == null ? "-" : String(job.exitCode), job.taskPriority == null ? "-" : String(job.taskPriority), job.project, job.resource, displayTime(job.createdAt)]],
   );
 }
 
 function integer(value: unknown): number {
   const parsed = Number(value);
   return Number.isInteger(parsed) ? parsed : 0;
+}
+
+function nullableInteger(value: unknown): number | null {
+  const parsed = Number(value);
+  return value !== undefined && value !== null && Number.isInteger(parsed) ? parsed : null;
+}
+
+function nullableString(value: unknown): string | null {
+  const text = String(value ?? "").trim();
+  return text || null;
+}
+
+function formatDuration(value: number): string {
+  if (!Number.isFinite(value) || value < 0) return "00:00:00";
+  const seconds = Math.floor(value / 1000);
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  return [hours, minutes, seconds % 60].map((part) => String(part).padStart(2, "0")).join(":");
 }
 
 function record(value: unknown): Record<string, unknown> | undefined {

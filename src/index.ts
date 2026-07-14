@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { access } from "node:fs/promises";
 import { loginHttp } from "./auth";
 import { getDistributedTrainingCapacity, renderCapacity } from "./capacity";
 import { InspireClient } from "./client";
@@ -6,10 +7,12 @@ import {
   DEFAULT_BASE_URL,
   loadAppConfig,
   loadCredentials,
+  loadJobMetadata,
   loadSession,
   removeCredentials,
   removeSession,
   saveCredentials,
+  saveJobMetadata,
   saveSession,
   type BrowserSession,
 } from "./config";
@@ -18,7 +21,7 @@ import { listCurrentUserJobs, renderJobs } from "./jobs";
 import { cancelJob, getJob, removeJob, renderJob, validateJobId } from "./job-actions";
 import { listParticipatingProjects, renderProjects } from "./projects";
 import { ask, askHidden } from "./prompts";
-import { buildSubmissionPayload, expandLogFileTemplate, type SubmitOptions } from "./submission";
+import { buildLogWrapper, buildSubmissionPayload, commandFileCommand, expandLogFileTemplate, writeLogWrapper, type LogWrapper, type SubmitOptions } from "./submission";
 import packageInfo from "../package.json";
 
 const VERSION = packageInfo.version;
@@ -60,14 +63,24 @@ async function logoutCommand(args: string[]): Promise<void> {
 async function submitCommand(args: string[]): Promise<void> {
   if (args.includes("--help") || args.includes("-h")) return printSubmitHelp();
   const options = parseSubmitOptions(args);
+  const commandFile = option(args, "--command-file");
+  if (commandFile) await access(commandFile);
   const appConfig = await loadAppConfig();
   const logTemplate = options.logFile ?? appConfig.log_file;
   if (options.appendLog && !logTemplate) {
     throw new SiimitError("--append-log requires --log-file or config.log_file.");
   }
+  const logFile = logTemplate ? expandLogFileTemplate(logTemplate, options.name) : undefined;
+  const nodes = options.nodes ?? appConfig.nodes;
+  if (logFile && nodes > 1 && !logFile.includes("{node}") && !logFile.includes("{rank}")) {
+    throw new SiimitError("Multi-node logging requires {node} or {rank} in --log-file to prevent concurrent writes.");
+  }
+  let wrapper: LogWrapper | undefined;
+  if (logFile) wrapper = buildLogWrapper(logFile, options.command, options.appendLog === true);
+  const { logFile: _logFile, appendLog: _appendLog, ...baseOptions } = options;
   const resolvedOptions: SubmitOptions = {
-    ...options,
-    ...(logTemplate ? { logFile: expandLogFileTemplate(logTemplate, options.name) } : {}),
+    ...baseOptions,
+    ...(wrapper ? { command: wrapper.command } : {}),
   };
   let client = new InspireClient(await sessionOrLogin());
   let payload: Record<string, unknown>;
@@ -80,12 +93,30 @@ async function submitCommand(args: string[]): Promise<void> {
   }
   if (args.includes("--dry-run")) return emit({
     dry_run: true,
-    log_file: resolvedOptions.logFile ?? null,
+    log_file: logFile ?? null,
+    wrapper_file: wrapper?.path ?? null,
     append_log: resolvedOptions.appendLog === true,
     payload,
   });
+  if (wrapper) await writeLogWrapper(wrapper);
   const submission = await client.submit(payload);
-  emit({ submitted: true, job_id: submission.jobId ?? null, result: submission.result });
+  if (submission.jobId && logFile) {
+    await saveJobMetadata(submission.jobId, { log_file: logFile });
+  }
+  const framework = Array.isArray(payload.framework_config)
+    ? payload.framework_config[0] as Record<string, unknown> | undefined
+    : undefined;
+  const resourceSpec = framework?.resource_spec_price as Record<string, unknown> | undefined;
+  const gpuCount = Number(framework?.gpu_count ?? 0);
+  const gpuType = String(resourceSpec?.gpu_type ?? "GPU").replace(/^NVIDIA_/, "").replaceAll("_", " ");
+  emit({
+    submitted: true,
+    job_id: submission.jobId ?? null,
+    status: String(submission.result.status ?? "job_queuing").replace(/^job_/, "").toUpperCase(),
+    log_file: logFile ?? null,
+    resource: gpuCount > 0 ? `${gpuCount}x${gpuType}` : "CPU",
+    task_priority: payload.task_priority,
+  });
 }
 
 async function listCommand(args: string[]): Promise<void> {
@@ -171,7 +202,7 @@ async function removeCommand(args: string[]): Promise<void> {
 
 async function getCommand(args: string[]): Promise<void> {
   if (args.includes("--help") || args.includes("-h")) {
-    console.log("Usage: siimit get <job-id> [--json]\n\nShow the current state and resource summary of one training job.");
+    console.log("Usage: siimit get <job-id> [--json | --raw]\n\nShow normalized task state. Use --raw only when the complete platform response is needed.");
     return;
   }
   const jobId = validateJobId(args[0]);
@@ -182,6 +213,8 @@ async function getCommand(args: string[]): Promise<void> {
     if (!(error instanceof AuthenticationError)) throw error;
     job = await getJob(new InspireClient(await loginWithSavedCredentials()), jobId);
   }
+  if (args.includes("--raw")) return emit(job.raw);
+  const metadata = await loadJobMetadata(jobId);
   if (args.includes("--json")) emit({
     jobId: job.jobId,
     name: job.name,
@@ -193,7 +226,13 @@ async function getCommand(args: string[]): Promise<void> {
     shm_gi: job.shmGiB,
     createdAt: job.createdAt,
     createdAtMs: job.createdAtMs,
-    raw: job.raw,
+    startedAt: job.startedAt,
+    finishedAt: job.finishedAt,
+    runningTime: job.runningTime,
+    exit_code: job.exitCode,
+    failure_reason: job.failureReason,
+    node: job.node,
+    log_file: metadata.log_file ?? null,
   });
   else console.log(renderJob(job));
 }
@@ -230,9 +269,13 @@ async function loginWithSavedCredentials(): Promise<BrowserSession> {
 }
 
 function parseSubmitOptions(args: string[]): SubmitOptions {
+  const inlineCommand = option(args, "--command") ?? option(args, "-c");
+  const commandFile = option(args, "--command-file");
+  if (inlineCommand && commandFile) throw new SiimitError("Use either --command or --command-file, not both.");
+  if (!inlineCommand && !commandFile) throw new SiimitError("--command or --command-file is required.");
   return {
     name: requiredOption(args, "--name", "-n"),
-    command: requiredOption(args, "--command", "-c"),
+    command: commandFile ? commandFileCommand(commandFile) : inlineCommand!,
     project: requiredOption(args, "--project", "-p"),
     group: requiredOption(args, "--group"),
     gpus: requiredNumericOption(args, "--gpus"),
@@ -327,7 +370,7 @@ function printListHelp(): void {
 }
 
 function printSubmitHelp(): void {
-  console.log(`Usage: siimit submit [OPTIONS]\n\nRequired:\n  -n, --name NAME              Job name\n  -c, --command COMMAND        Start command\n  -p, --project PROJECT        Exact participating project name or project-... ID\n      --group GROUP            Exact GPU compute group name or lcg-... ID\n      --gpus NUMBER            GPUs per node\n      --image IMAGE            Private image name:version or full address\n\nOptional:\n      --nodes NUMBER           Number of nodes (default from config: 1)\n      --max-time HOURS         Maximum runtime\n      --shm-size GIB           Shared memory per instance\n      --log-file PATH          Save stdout and stderr; supports {name} and {timestamp}\n      --append-log             Append instead of overwriting the log file\n      --exclude-node NAME      Exclude a node; repeat as needed\n      --dry-run                Resolve and print payload without submitting\n\nThe log parent directory is created automatically. Total GPUs = --gpus × --nodes.\nDefaults are loaded from ~/.config/siimit/config.json; optional config key: log_file.`);
+  console.log(`Usage: siimit submit [OPTIONS]\n\nRequired:\n  -n, --name NAME              Job name\n  -c, --command COMMAND        Inline start command\n      --command-file PATH      Absolute shared script path (instead of --command)\n  -p, --project PROJECT        Exact participating project name or project-... ID\n      --group GROUP            Exact GPU compute group name or lcg-... ID\n      --gpus NUMBER            GPUs per node\n      --image IMAGE            Private image name:version or full address\n\nOptional:\n      --nodes NUMBER           Number of nodes (default from config: 1)\n      --max-time HOURS         Maximum runtime\n      --shm-size GIB           Shared memory per instance\n      --log-file PATH          Absolute shared log path; supports {name}, {timestamp}, {node}, {rank}\n      --append-log             Append instead of overwriting the log file\n      --exclude-node NAME      Exclude a node; repeat as needed\n      --dry-run                Resolve and print payload without submitting\n\nLogging creates a wrapper script beside the log under .siimit/wrappers/.\nMulti-node logging requires {node} or {rank}. Total GPUs = --gpus × --nodes.`);
 }
 
 main(process.argv.slice(2)).catch((error: unknown) => {

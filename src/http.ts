@@ -12,12 +12,20 @@ export class CookieHttpClient {
     this.jar = jar;
   }
 
-  async request(url: string, init: RequestInit = {}, redirects = 10): Promise<Response> {
+  async request(url: string, init: RequestInit = {}, redirects = 10, rateRetries = 3): Promise<Response> {
     const headers = new Headers(init.headers);
     const cookie = await this.jar.getCookieString(url);
     if (cookie) headers.set("cookie", cookie);
     const response = await fetch(url, { ...init, headers, redirect: "manual" });
     await this.captureCookies(response, url);
+
+    if (response.status === 429 && rateRetries > 0) {
+      const attempt = 4 - rateRetries;
+      const retryAfter = retryAfterMilliseconds(response.headers.get("retry-after"), attempt);
+      console.error(`Rate limited by Inspire; retrying in ${(retryAfter / 1000).toFixed(1)}s (${attempt}/3)`);
+      await new Promise((resolve) => setTimeout(resolve, retryAfter));
+      return this.request(url, init, redirects, rateRetries - 1);
+    }
 
     if (REDIRECT_STATUSES.has(response.status)) {
       if (redirects <= 0) throw new ApiError("Too many authentication redirects.");
@@ -83,6 +91,16 @@ export class CookieHttpClient {
     }
     return new CookieHttpClient(jar);
   }
+}
+
+function retryAfterMilliseconds(value: string | null, attempt: number): number {
+  if (value) {
+    const seconds = Number(value);
+    if (Number.isFinite(seconds) && seconds >= 0) return seconds * 1000;
+    const date = Date.parse(value);
+    if (Number.isFinite(date)) return Math.max(0, date - Date.now());
+  }
+  return 500 * (2 ** (attempt - 1));
 }
 
 function getSetCookieHeaders(headers: Headers): string[] {
