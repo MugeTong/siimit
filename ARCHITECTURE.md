@@ -7,14 +7,13 @@ index.ts
   -> cli/commands + cli/runtime
       -> domain services (submission, jobs, projects, capacity)
           -> platform client (client, auth, http)
-      -> local infrastructure (logging, storage, config)
+      -> local infrastructure (config)
 ```
 
 ## Module boundaries
 
 - `src/index.ts`: command routing and small presentation adapters only.
 - `src/cli/`: argument parsing, help, authenticated execution, and command orchestration.
-- `src/logging/`: shared-filesystem wrapper script generation.
 - `src/shared/`: data-shape helpers with no platform or CLI dependencies.
 - `src/submission.ts`, `jobs.ts`, `projects.ts`, `images.ts`, `capacity.ts`, `job-actions.ts`: domain operations and normalization.
 - `src/platform/client.ts`, `http.ts`, `auth.ts`: Inspire transport and authentication.

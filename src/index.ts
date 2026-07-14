@@ -1,6 +1,5 @@
 #!/usr/bin/env bun
 import { loginHttp } from "./platform/auth";
-import { getDistributedTrainingCapacity, renderCapacity } from "./capacity";
 import {
   DEFAULT_BASE_URL,
   loadAppConfig,
@@ -17,10 +16,11 @@ import { ask, askHidden } from "./prompts";
 import packageInfo from "../package.json";
 import { numericOption, option } from "./cli/args";
 import { withMutationClient, withReadClient } from "./cli/runtime";
-import { printGroupsHelp, printHelp, printListHelp, printProjectsHelp } from "./cli/help";
+import { printHelp, printListHelp, printProjectsHelp } from "./cli/help";
 import { runSubmit } from "./cli/commands/submit";
 import { runImages } from "./cli/commands/images";
 import { runConfig } from "./cli/commands/config";
+import { runGroups } from "./cli/commands/groups";
 
 const VERSION = packageInfo.version;
 
@@ -32,7 +32,7 @@ async function main(args: string[]): Promise<void> {
   if (command === "logout") return logoutCommand(rest);
   if (command === "submit") return runSubmit(rest);
   if (command === "ls") return listCommand(rest);
-  if (command === "groups") return groupsCommand(rest);
+  if (command === "groups") return runGroups(rest);
   if (command === "projects") return projectsCommand(rest);
   if (command === "images") return runImages(rest);
   if (command === "config") return runConfig(rest);
@@ -79,17 +79,6 @@ async function listCommand(args: string[]): Promise<void> {
   const rows = await withReadClient((client) => listCurrentUserJobs(client, options));
   if (args.includes("--json")) emit(rows);
   else console.log(renderJobs(rows, args.includes("--wide")));
-}
-
-async function groupsCommand(args: string[]): Promise<void> {
-  if (args.includes("--help") || args.includes("-h")) return printGroupsHelp();
-  const project = option(args, "--project") ?? option(args, "-p");
-  const rows = await withReadClient((client) => getDistributedTrainingCapacity(client, project));
-  if (args.includes("--json")) emit(rows);
-  else {
-    console.log(renderCapacity(rows, args.includes("--wide")));
-    if (!project) console.log("\nTip: use --project PROJECT to show GPU sizes you are allowed to request.");
-  }
 }
 
 async function projectsCommand(args: string[]): Promise<void> {

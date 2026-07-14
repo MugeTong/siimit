@@ -5,8 +5,6 @@ import { resolveWorkspace } from "./platform/catalog/workspaces";
 import { renderTable } from "./table";
 import { asRecord as record, records as arrayOfRecords } from "./shared/records";
 
-const DISTRIBUTED_TRAINING_WORKSPACE = "分布式训练空间";
-
 export interface CapacityRow {
   group: string;
   gpuType: string;
@@ -21,9 +19,10 @@ export interface CapacityRow {
 
 export async function getDistributedTrainingCapacity(
   client: InspireClient,
+  workspace: string,
   projectName?: string,
 ): Promise<CapacityRow[]> {
-  const workspaceId = await resolveWorkspace(client, DISTRIBUTED_TRAINING_WORKSPACE);
+  const workspaceId = await resolveWorkspace(client, workspace);
   const project = projectName
     ? await resolveProject(client, workspaceId, projectName)
     : undefined;
@@ -35,7 +34,7 @@ export async function getDistributedTrainingCapacity(
   const groups = arrayOfRecords(record(groupResponse.data)?.logic_compute_groups);
   if (!groups.length) {
     throw new ConfigurationError(
-      `No compute groups were found in ${DISTRIBUTED_TRAINING_WORKSPACE}.`,
+      `No compute groups were found in ${workspace}.`,
     );
   }
 
@@ -91,8 +90,8 @@ export async function getDistributedTrainingCapacity(
   return rows.sort((left, right) => right.highPriority - left.highPriority);
 }
 
-export function renderCapacity(rows: CapacityRow[], wide = false): string {
-  if (!rows.length) return "No GPU capacity found in 分布式训练空间.";
+export function renderCapacity(rows: CapacityRow[], workspace: string, wide = false): string {
+  if (!rows.length) return `No GPU capacity found in ${workspace}.`;
   const header = ["GPU TYPE", "COMPUTE GROUP", "GPU SIZES", "FREE", "OVERCOMMITTED", "PREEMPTIBLE", "HIGH PRI", "USED", "TOTAL"];
   const values = rows.map((row) => [
     row.gpuType,
@@ -128,7 +127,7 @@ export function renderCapacity(rows: CapacityRow[], wide = false): string {
     String(totals.total),
   ]);
   return [
-    "Workspace: 分布式训练空间",
+    `Workspace: ${workspace}`,
     renderTable(header, values, {
       maxWidths: [22, 32, 11, 6, 13, 11, 8, 8, 7],
       align: ["left", "left", "right", "right", "right", "right", "right", "right", "right"],

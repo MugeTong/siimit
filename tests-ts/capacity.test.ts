@@ -58,6 +58,7 @@ describe("distributed training capacity", () => {
   test("calculates live and high-priority GPU capacity", async () => {
     const rows = await getDistributedTrainingCapacity(
       new FakeClient() as unknown as InspireClient,
+      "分布式训练空间",
       "课程项目",
     );
     expect(rows).toEqual([{
@@ -71,12 +72,13 @@ describe("distributed training capacity", () => {
       preemptible: 2,
       total: 16,
     }]);
-    expect(renderCapacity(rows)).toContain("Workspace: 分布式训练空间");
+    expect(renderCapacity(rows, "分布式训练空间")).toContain("Workspace: 分布式训练空间");
   });
 
   test("separates overcommit from reclaimable high-priority capacity", async () => {
     const rows = await getDistributedTrainingCapacity(
       new FakeClient(20, 8) as unknown as InspireClient,
+      "分布式训练空间",
       "课程项目",
     );
     expect(rows[0]).toMatchObject({

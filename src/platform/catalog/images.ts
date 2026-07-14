@@ -1,4 +1,3 @@
-import type { AppConfig } from "../../config";
 import { ConfigurationError } from "../../errors";
 import { asRecord, records } from "../../shared/records";
 import type { InspireClient } from "../client";
@@ -14,14 +13,13 @@ export interface PrivateImage {
 export async function listPrivateImages(
   client: InspireClient,
   workspaceId: string,
-  config: AppConfig,
 ): Promise<PrivateImage[]> {
   const response = await client.postJson("/api/v1/image/list", {
     page: 0,
     page_size: -1,
     filter: {
-      source_list: config.image_sources,
-      visibility: config.image_visibility,
+      source_list: ["SOURCE_PRIVATE", "SOURCE_PUBLIC"],
+      visibility: "VISIBILITY_PRIVATE",
       registry_hint: { workspace_id: workspaceId },
     },
   });
@@ -49,10 +47,9 @@ export async function resolvePrivateImage(
   client: InspireClient,
   workspaceId: string,
   requested: string,
-  config: AppConfig,
 ): Promise<{ address: string; source: "SOURCE_PRIVATE" }> {
   const target = requested.trim().toLowerCase();
-  const images = await listPrivateImages(client, workspaceId, config);
+  const images = await listPrivateImages(client, workspaceId);
   const matches = images.filter((image) =>
     [image.name, image.address, image.name && image.version ? `${image.name}:${image.version}` : ""]
       .filter(Boolean)

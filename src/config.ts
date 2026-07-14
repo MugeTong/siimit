@@ -42,18 +42,20 @@ export type Credentials = z.infer<typeof credentialsSchema>;
 
 export const appConfigSchema = z.object({
   workspace: z.string().min(1).default("分布式训练空间"),
-  image_visibility: z.literal("VISIBILITY_PRIVATE").default("VISIBILITY_PRIVATE"),
-  image_sources: z.array(z.string()).default(["SOURCE_PRIVATE", "SOURCE_PUBLIC"]),
   nodes: z.number().int().positive().default(1),
   framework: z.string().min(1).default("pytorch"),
-  priority_strategy: z.literal("project_max").default("project_max"),
-  quota_strategy: z.literal("max_resources_for_gpu_count").default("max_resources_for_gpu_count"),
-  nominal_cpu_per_gpu: z.number().positive().default(20),
-  nominal_memory_gib_per_gpu: z.number().positive().default(200),
 });
 
 export type AppConfig = z.infer<typeof appConfigSchema>;
 export const DEFAULT_APP_CONFIG: AppConfig = appConfigSchema.parse({});
+const DEPRECATED_APP_CONFIG_KEYS = [
+  "image_visibility",
+  "image_sources",
+  "priority_strategy",
+  "quota_strategy",
+  "nominal_cpu_per_gpu",
+  "nominal_memory_gib_per_gpu",
+] as const;
 
 export function configDir(): string {
   if (process.env.SIIMIT_CONFIG_DIR) return process.env.SIIMIT_CONFIG_DIR;
@@ -114,7 +116,14 @@ export async function loadCredentials(path = credentialsPath()): Promise<Credent
 export async function loadAppConfig(path = appConfigPath()): Promise<AppConfig> {
   try {
     const raw = JSON.parse(await readFile(path, "utf8"));
-    return appConfigSchema.parse(raw);
+    const config = appConfigSchema.parse(raw);
+    if (
+      raw && typeof raw === "object"
+      && DEPRECATED_APP_CONFIG_KEYS.some((key) => key in raw)
+    ) {
+      await writePrivateJson(path, config);
+    }
+    return config;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
       throw new ConfigurationError(`Cannot read siimit config: ${errorMessage(error)}`);

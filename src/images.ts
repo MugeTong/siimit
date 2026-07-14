@@ -9,7 +9,7 @@ export async function listVisibleImages(
   config: AppConfig,
 ): Promise<PrivateImage[]> {
   const workspaceId = await resolveWorkspace(client, config.workspace);
-  return listPrivateImages(client, workspaceId, config);
+  return listPrivateImages(client, workspaceId);
 }
 
 export function renderImages(images: PrivateImage[], wide = false): string {

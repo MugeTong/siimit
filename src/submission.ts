@@ -34,7 +34,7 @@ export async function buildSubmissionPayload(
     project.id,
     project.maxPriority,
   );
-  const image = await resolvePrivateImage(client, workspaceId, options.image, config);
+  const image = await resolvePrivateImage(client, workspaceId, options.image);
   const resourceSpec: Record<string, unknown> = {
     cpu_type: quota.cpuType,
     cpu_count: quota.cpu,

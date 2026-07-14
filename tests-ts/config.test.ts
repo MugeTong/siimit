@@ -44,6 +44,33 @@ describe("session storage", () => {
     const config = await loadAppConfig(path);
     expect(config.workspace).toBe("分布式训练空间");
     expect(config.nodes).toBe(1);
-    expect(config.priority_strategy).toBe("project_max");
+    expect(Object.keys(config).sort()).toEqual([
+      "framework",
+      "nodes",
+      "workspace",
+    ]);
+  });
+
+  test("removes obsolete settings from an existing config", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "siimit-"));
+    directories.push(directory);
+    const path = join(directory, "config.json");
+    await Bun.write(path, JSON.stringify({
+      workspace: "自定义训练空间",
+      nodes: 2,
+      framework: "pytorch",
+      priority_strategy: "project_max",
+      nominal_cpu_per_gpu: 20,
+    }));
+    expect(await loadAppConfig(path)).toEqual({
+      workspace: "自定义训练空间",
+      nodes: 2,
+      framework: "pytorch",
+    });
+    expect(JSON.parse(await readFile(path, "utf8"))).toEqual({
+      workspace: "自定义训练空间",
+      nodes: 2,
+      framework: "pytorch",
+    });
   });
 });
