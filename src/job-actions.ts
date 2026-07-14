@@ -2,6 +2,7 @@ import type { InspireClient } from "./client";
 import { ApiError, ConfigurationError } from "./errors";
 import { renderTable } from "./table";
 import { displayTime, normalizeTime } from "./time";
+import { asRecord as record, records as arrayOfRecords } from "./shared/records";
 
 export interface JobDetail {
   jobId: string;
@@ -147,16 +148,4 @@ function formatDuration(value: number): string {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   return [hours, minutes, seconds % 60].map((part) => String(part).padStart(2, "0")).join(":");
-}
-
-function record(value: unknown): Record<string, unknown> | undefined {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : undefined;
-}
-
-function arrayOfRecords(value: unknown): Record<string, unknown>[] {
-  return Array.isArray(value)
-    ? value.filter((item): item is Record<string, unknown> => record(item) !== undefined)
-    : [];
 }

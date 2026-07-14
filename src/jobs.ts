@@ -3,6 +3,7 @@ import { ApiError, ConfigurationError } from "./errors";
 import { listWorkspaces, resolveWorkspace } from "./submission";
 import { renderTable } from "./table";
 import { displayTime, normalizeTime } from "./time";
+import { asRecord as record, records as arrayOfRecords } from "./shared/records";
 
 export interface ListOptions {
   workspace?: string;
@@ -106,14 +107,4 @@ function normalizeStatus(value: string): string {
 
 function displayStatus(value: string): string {
   return value.replace(/^job_/, "").toUpperCase();
-}
-
-function record(value: unknown): Record<string, unknown> | undefined {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : undefined;
-}
-
-function arrayOfRecords(value: unknown): Record<string, unknown>[] {
-  return Array.isArray(value) ? value.filter((item): item is Record<string, unknown> => record(item) !== undefined) : [];
 }

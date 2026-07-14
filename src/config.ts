@@ -74,45 +74,6 @@ export function appConfigPath(): string {
   return join(configDir(), "config.json");
 }
 
-export function jobMetadataPath(): string {
-  return join(configDir(), "jobs.json");
-}
-
-export async function saveJobMetadata(
-  jobId: string,
-  metadata: { log_file?: string },
-  path = jobMetadataPath(),
-): Promise<void> {
-  let current: Record<string, unknown> = {};
-  try {
-    const parsed: unknown = JSON.parse(await readFile(path, "utf8"));
-    if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
-      current = parsed as Record<string, unknown>;
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-  }
-  current[jobId] = metadata;
-  await writePrivateJson(path, current);
-}
-
-export async function loadJobMetadata(
-  jobId: string,
-  path = jobMetadataPath(),
-): Promise<{ log_file?: string }> {
-  try {
-    const parsed: unknown = JSON.parse(await readFile(path, "utf8"));
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return {};
-    const value = (parsed as Record<string, unknown>)[jobId];
-    if (typeof value !== "object" || value === null || Array.isArray(value)) return {};
-    const logFile = (value as Record<string, unknown>).log_file;
-    return typeof logFile === "string" ? { log_file: logFile } : {};
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return {};
-    throw error;
-  }
-}
-
 export async function saveSession(session: BrowserSession, path = sessionPath()): Promise<string> {
   await mkdir(dirname(path), { recursive: true, mode: 0o700 });
   const temporary = `${path}.tmp`;

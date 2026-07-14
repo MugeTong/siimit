@@ -1,6 +1,7 @@
 import type { InspireClient } from "./client";
 import { ApiError } from "./errors";
 import { renderTable } from "./table";
+import { asRecord as record, records as arrayOfRecords } from "./shared/records";
 
 export interface ProjectRow {
   id: string;
@@ -70,16 +71,4 @@ function optionalNumber(value: unknown): number | null {
   if (value === null || value === undefined || value === "") return null;
   const result = Number(value);
   return Number.isFinite(result) ? result : null;
-}
-
-function record(value: unknown): Record<string, unknown> | undefined {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : undefined;
-}
-
-function arrayOfRecords(value: unknown): Record<string, unknown>[] {
-  return Array.isArray(value)
-    ? value.filter((item): item is Record<string, unknown> => record(item) !== undefined)
-    : [];
 }

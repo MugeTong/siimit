@@ -1,8 +1,8 @@
 import type { AppConfig } from "./config";
 import { ApiError, ConfigurationError } from "./errors";
 import type { InspireClient } from "./client";
-import { chmod, mkdir, writeFile } from "node:fs/promises";
-import { basename, dirname, isAbsolute, join } from "node:path";
+import { asRecord as record, records as arrayOfRecords } from "./shared/records";
+import { wrapShellCommand } from "./logging/wrapper";
 
 export interface SubmitOptions {
   name: string;
@@ -76,7 +76,7 @@ export async function buildSubmissionPayload(
 
   const payload: Record<string, unknown> = {
     name: options.name,
-    command: wrapCommand(options.command),
+    command: wrapShellCommand(options.command),
     framework: config.framework,
     project_id: project.id,
     workspace_id: workspaceId,
@@ -277,59 +277,4 @@ function memory(item: Record<string, unknown>): number {
 
 function number(value: unknown): number {
   return Number(value ?? 0);
-}
-
-function record(value: unknown): Record<string, unknown> | undefined {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : undefined;
-}
-
-function arrayOfRecords(value: unknown): Record<string, unknown>[] {
-  return Array.isArray(value) ? value.filter((item): item is Record<string, unknown> => record(item) !== undefined) : [];
-}
-
-export function expandLogFileTemplate(template: string, name: string, now = new Date()): string {
-  const timestamp = now.toISOString().replaceAll(":", "-");
-  return template.replaceAll("{name}", name).replaceAll("{timestamp}", timestamp);
-}
-
-export interface LogWrapper {
-  path: string;
-  script: string;
-  command: string;
-}
-
-export function buildLogWrapper(logFile: string, command: string, append: boolean): LogWrapper {
-  if (!isAbsolute(logFile)) {
-    throw new ConfigurationError("--log-file must be an absolute path on a shared filesystem.");
-  }
-  const stem = basename(logFile).replace(/[^a-zA-Z0-9._-]/g, "_");
-  const path = join(dirname(logFile), ".siimit", "wrappers", `${stem}.sh`);
-  const redirect = append ? ">>" : ">";
-  const script = `#!/usr/bin/env bash\nlog_file=${shellQuote(logFile)}\nnode=\${HOSTNAME:-unknown}\nrank=\${RANK:-\${LOCAL_RANK:-0}}\nlog_file=\${log_file//\\{node\\}/$node}\nlog_file=\${log_file//\\{rank\\}/$rank}\nlog_dir=\${log_file%/*}\nif [ "$log_dir" != "$log_file" ]; then mkdir -p -- "$log_dir" || exit; fi\nexec bash -c ${shellQuote(command)} ${redirect}"$log_file" 2>&1\n`;
-  return { path, script, command: `bash ${shellQuote(path)}` };
-}
-
-export async function writeLogWrapper(wrapper: LogWrapper): Promise<void> {
-  await mkdir(dirname(wrapper.path), { recursive: true, mode: 0o700 });
-  await writeFile(wrapper.path, wrapper.script, { mode: 0o700 });
-  await chmod(wrapper.path, 0o700);
-}
-
-export function commandFileCommand(path: string): string {
-  if (!isAbsolute(path)) {
-    throw new ConfigurationError("--command-file must be an absolute path on a shared filesystem.");
-  }
-  return `bash ${shellQuote(path)}`;
-}
-
-export function wrapCommand(command: string): string {
-  const trimmed = command.trim();
-  if (/^(bash|sh|\/bin\/bash|\/bin\/sh) /.test(trimmed)) return command;
-  return `bash -c ${shellQuote(command)}`;
-}
-
-function shellQuote(value: string): string {
-  return `'${value.replaceAll("'", "'\\''")}'`;
 }

@@ -2,6 +2,7 @@ import type { InspireClient } from "./client";
 import { ConfigurationError } from "./errors";
 import { resolveProject, resolveWorkspace } from "./submission";
 import { renderTable } from "./table";
+import { asRecord as record, records as arrayOfRecords } from "./shared/records";
 
 const DISTRIBUTED_TRAINING_WORKSPACE = "分布式训练空间";
 
@@ -141,16 +142,4 @@ function delay(milliseconds: number): Promise<void> {
 function integer(value: unknown): number {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? Math.trunc(parsed) : 0;
-}
-
-function record(value: unknown): Record<string, unknown> | undefined {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : undefined;
-}
-
-function arrayOfRecords(value: unknown): Record<string, unknown>[] {
-  return Array.isArray(value)
-    ? value.filter((item): item is Record<string, unknown> => record(item) !== undefined)
-    : [];
 }
