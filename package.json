@@ -1,6 +1,6 @@
 {
   "name": "siimit",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "A small, safe CLI for logging in to Inspire and submitting training jobs",
   "type": "module",
   "bin": {

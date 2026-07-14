@@ -4,7 +4,7 @@ import { withReadClient } from "../runtime";
 
 export async function runImages(args: string[]): Promise<void> {
   if (args.includes("--help") || args.includes("-h")) {
-    console.log("Usage: siimit images [--wide | --json]\n\nList personal private images visible in the configured training workspace.");
+    console.log("Usage: siimit images [--wide | --json]\n\nList personal private images visible in the configured training workspace.\n\nOptions:\n  --wide  Print complete, copyable image values\n  --json  Print structured JSON instead of a table\n  -h, --help  Show this help");
     return;
   }
   const config = await loadAppConfig();

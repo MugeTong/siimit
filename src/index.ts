@@ -122,7 +122,7 @@ async function removeCommand(args: string[]): Promise<void> {
 
 async function getCommand(args: string[]): Promise<void> {
   if (args.includes("--help") || args.includes("-h")) {
-    console.log("Usage: siimit get <job-id> [--json | --raw]\n\nShow normalized task state. Use --raw only when the complete platform response is needed.");
+    console.log("Usage: siimit get <job-id> [--json | --raw]\n\nShow normalized task state.\n\nOptions:\n  --json  Print normalized structured JSON\n  --raw   Print the complete unnormalized platform response\n  -h, --help  Show this help");
     return;
   }
   const jobId = validateJobId(args[0]);

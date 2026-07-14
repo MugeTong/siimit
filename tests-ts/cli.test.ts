@@ -32,5 +32,12 @@ describe("CLI onboarding", () => {
     const result = run("--help");
     expect(result.stdout).toContain("Getting started:");
     expect(result.stdout).toContain("groups --project PROJECT --wide");
+    expect(result.stdout).toContain("Add --json for structured output");
+  });
+
+  test("query help explains structured output", () => {
+    for (const command of ["projects", "groups", "images", "ls", "get"]) {
+      expect(run(command, "--help").stdout).toContain("--json");
+    }
   });
 });
