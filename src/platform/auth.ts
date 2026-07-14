@@ -1,7 +1,7 @@
 import * as cheerio from "cheerio";
 
-import { type BrowserSession, DEFAULT_BASE_URL } from "./config";
-import { AuthenticationError } from "./errors";
+import { type BrowserSession, DEFAULT_BASE_URL } from "../config";
+import { AuthenticationError } from "../errors";
 import { CookieHttpClient } from "./http";
 
 const USER_DETAIL_PATH = "/api/v1/user/detail";
@@ -148,4 +148,3 @@ async function parseJsonRecord(response: Response, label: string): Promise<Recor
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
-

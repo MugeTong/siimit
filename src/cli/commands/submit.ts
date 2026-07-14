@@ -1,6 +1,6 @@
 import { access } from "node:fs/promises";
 
-import { InspireClient } from "../../client";
+import { InspireClient } from "../../platform/client";
 import { loadAppConfig } from "../../config";
 import { saveJobMetadata } from "../../storage/job-metadata";
 import { AuthenticationError, SiimitError } from "../../errors";

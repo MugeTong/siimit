@@ -1,7 +1,7 @@
 import { DEFAULT_BASE_URL } from "../config";
 
 export function printHelp(version: string): void {
-  console.log(`siimit ${version}\n\nUsage:\n  siimit version\n  siimit login [--username ID] [--base-url URL]\n  siimit logout [--forget]\n  siimit groups [--json]\n  siimit projects [--json]\n  siimit ls [OPTIONS]\n  siimit get <job-id> [--json | --raw]\n  siimit submit [OPTIONS]\n  siimit cancel <job-id>\n  siimit remove <job-id>\n\nRun a command with --help for details.\n\nEnvironment:\n  INSPIRE_USERNAME  Platform login ID\n  INSPIRE_PASSWORD  Platform password\n  INSPIRE_BASE_URL  Platform URL (default: ${DEFAULT_BASE_URL})\n  SIIMIT_CONFIG_DIR Override ~/.config/siimit`);
+  console.log(`siimit ${version}\n\nUsage:\n  siimit version\n  siimit login [--username ID] [--base-url URL]\n  siimit logout [--forget]\n  siimit groups [--json]\n  siimit projects [--json]\n  siimit images [--json]\n  siimit ls [OPTIONS]\n  siimit get <job-id> [--json | --raw]\n  siimit submit [OPTIONS]\n  siimit cancel <job-id>\n  siimit remove <job-id>\n\nRun a command with --help for details.\n\nEnvironment:\n  INSPIRE_USERNAME  Platform login ID\n  INSPIRE_PASSWORD  Platform password\n  INSPIRE_BASE_URL  Platform URL (default: ${DEFAULT_BASE_URL})\n  SIIMIT_CONFIG_DIR Override ~/.config/siimit`);
 }
 
 export function printGroupsHelp(): void {

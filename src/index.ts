@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { loginHttp } from "./auth";
+import { loginHttp } from "./platform/auth";
 import { getDistributedTrainingCapacity, renderCapacity } from "./capacity";
 import {
   DEFAULT_BASE_URL,
@@ -20,6 +20,7 @@ import { numericOption, option } from "./cli/args";
 import { withMutationClient, withReadClient } from "./cli/runtime";
 import { printGroupsHelp, printHelp, printListHelp, printProjectsHelp } from "./cli/help";
 import { runSubmit } from "./cli/commands/submit";
+import { runImages } from "./cli/commands/images";
 
 const VERSION = packageInfo.version;
 
@@ -33,6 +34,7 @@ async function main(args: string[]): Promise<void> {
   if (command === "ls") return listCommand(rest);
   if (command === "groups") return groupsCommand(rest);
   if (command === "projects") return projectsCommand(rest);
+  if (command === "images") return runImages(rest);
   if (command === "cancel") return cancelCommand(rest);
   if (command === "remove") return removeCommand(rest);
   if (command === "get") return getCommand(rest);

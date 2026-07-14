@@ -1,6 +1,7 @@
-import type { InspireClient } from "./client";
+import type { InspireClient } from "./platform/client";
 import { ConfigurationError } from "./errors";
-import { resolveProject, resolveWorkspace } from "./submission";
+import { resolveProject } from "./platform/catalog/projects";
+import { resolveWorkspace } from "./platform/catalog/workspaces";
 import { renderTable } from "./table";
 import { asRecord as record, records as arrayOfRecords } from "./shared/records";
 

@@ -1,5 +1,5 @@
-import { loginHttp } from "../auth";
-import { InspireClient } from "../client";
+import { loginHttp } from "../platform/auth";
+import { InspireClient } from "../platform/client";
 import { loadCredentials, loadSession, saveSession, type BrowserSession } from "../config";
 import { AuthenticationError, ConfigurationError } from "../errors";
 

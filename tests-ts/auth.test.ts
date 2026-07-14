@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { encryptCasPassword, extractLoginForm } from "../src/auth";
+import { encryptCasPassword, extractLoginForm } from "../src/platform/auth";
 
 const exponent = "10001";
 const modulus = "c1".repeat(128);
@@ -18,4 +18,3 @@ describe("CAS helpers", () => {
     expect(encrypted).not.toContain("secret");
   });
 });
-

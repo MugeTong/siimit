@@ -1,7 +1,7 @@
 import { Cookie, CookieJar } from "tough-cookie";
 
-import type { StorageCookie } from "./config";
-import { ApiError } from "./errors";
+import type { StorageCookie } from "../config";
+import { ApiError } from "../errors";
 
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 

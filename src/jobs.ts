@@ -1,6 +1,6 @@
-import type { InspireClient } from "./client";
+import type { InspireClient } from "./platform/client";
 import { ApiError, ConfigurationError } from "./errors";
-import { listWorkspaces, resolveWorkspace } from "./submission";
+import { listWorkspaces, resolveWorkspace } from "./platform/catalog/workspaces";
 import { renderTable } from "./table";
 import { displayTime, normalizeTime } from "./time";
 import { asRecord as record, records as arrayOfRecords } from "./shared/records";

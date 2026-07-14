@@ -17,8 +17,9 @@ index.ts
 - `src/logging/`: shared-filesystem wrapper script generation.
 - `src/storage/`: local task metadata. Platform data does not belong here.
 - `src/shared/`: data-shape helpers with no platform or CLI dependencies.
-- `src/submission.ts`, `jobs.ts`, `projects.ts`, `capacity.ts`, `job-actions.ts`: domain operations and normalization.
-- `src/client.ts`, `http.ts`, `auth.ts`: Inspire transport and authentication.
+- `src/submission.ts`, `jobs.ts`, `projects.ts`, `images.ts`, `capacity.ts`, `job-actions.ts`: domain operations and normalization.
+- `src/platform/client.ts`, `http.ts`, `auth.ts`: Inspire transport and authentication.
+- `src/platform/catalog/`: focused platform lookups for workspaces, projects, quotas, and private images.
 - `src/config.ts`: schemas plus credential/session/application configuration persistence.
 
 ## Extension rules

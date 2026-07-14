@@ -1,4 +1,4 @@
-import type { InspireClient } from "./client";
+import type { InspireClient } from "./platform/client";
 import { ApiError, ConfigurationError } from "./errors";
 import { renderTable } from "./table";
 import { displayTime, normalizeTime } from "./time";

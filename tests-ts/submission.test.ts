@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-import type { InspireClient } from "../src/client";
+import type { InspireClient } from "../src/platform/client";
 import { buildSubmissionPayload } from "../src/submission";
 import { buildLogWrapper, expandLogFileTemplate, writeLogWrapper } from "../src/logging/wrapper";
 import { DEFAULT_APP_CONFIG } from "../src/config";

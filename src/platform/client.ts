@@ -1,5 +1,5 @@
-import type { BrowserSession } from "./config";
-import { ApiError, AuthenticationError } from "./errors";
+import type { BrowserSession } from "../config";
+import { ApiError, AuthenticationError } from "../errors";
 import { CookieHttpClient } from "./http";
 
 export class InspireClient {

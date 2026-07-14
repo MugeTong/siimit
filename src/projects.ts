@@ -1,4 +1,4 @@
-import type { InspireClient } from "./client";
+import type { InspireClient } from "./platform/client";
 import { ApiError } from "./errors";
 import { renderTable } from "./table";
 import { asRecord as record, records as arrayOfRecords } from "./shared/records";

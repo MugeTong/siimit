@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import type { InspireClient } from "../src/client";
+import type { InspireClient } from "../src/platform/client";
 import { cancelJob, getJob, removeJob, validateJobId } from "../src/job-actions";
 
 class FakeClient {
