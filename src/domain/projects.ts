@@ -2,11 +2,13 @@ import type { InspireClient } from "../platform/client";
 import { ApiError } from "../errors";
 import { renderTable } from "../shared/table";
 import { asRecord as record, records as arrayOfRecords } from "../shared/records";
+import { availableTaskPriorities } from "../platform/catalog/projects";
 
 export interface ProjectRow {
   id: string;
   name: string;
-  maxPriority: string;
+  priorityLevel: "LOW" | "HIGH";
+  availablePriorities: Array<"low" | "high">;
   budget: number | null;
   remaining: number | null;
   memberRemaining: number | null;
@@ -27,10 +29,14 @@ export async function listParticipatingProjects(client: InspireClient): Promise<
     const data = record(response.data) ?? {};
     const items = arrayOfRecords(data.items);
     for (const item of items) {
+      const priorityLimit = optionalNumber(item.priority_name)
+        ?? (String(item.priority_level ?? "").toUpperCase() === "HIGH" ? 4 : 1);
+      const availablePriorities = availableTaskPriorities(priorityLimit);
       rows.push({
         id: String(item.id ?? ""),
         name: String(item.name ?? ""),
-        maxPriority: String(item.priority_name ?? item.priority_level ?? ""),
+        priorityLevel: availablePriorities.includes("high") ? "HIGH" : "LOW",
+        availablePriorities,
         budget: optionalNumber(item.budget),
         remaining: optionalNumber(item.remain_budget),
         memberRemaining: optionalNumber(item.member_remain_budget),
@@ -46,17 +52,17 @@ export async function listParticipatingProjects(client: InspireClient): Promise<
 export function renderProjects(rows: ProjectRow[], wide = false): string {
   if (!rows.length) return "No participating projects found.";
   return renderTable(
-    ["PROJECT", "MAX PRI", "BUDGET", "REMAINING", "MY REMAINING", "ID"],
+    ["PROJECT", "PRIORITIES", "BUDGET", "REMAINING", "MY REMAINING", "ID"],
     rows.map((row) => [
       row.name,
-      row.maxPriority || "-",
+      row.availablePriorities.join(","),
       formatNumber(row.budget),
       formatNumber(row.remaining),
       formatNumber(row.memberRemaining),
       row.id,
     ]),
     {
-      maxWidths: [36, 7, 14, 14, 14, 32],
+      maxWidths: [36, 10, 14, 14, 14, 32],
       align: ["left", "right", "right", "right", "right", "left"],
       wide,
     },

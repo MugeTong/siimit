@@ -34,9 +34,20 @@ export function parseSubmitOptions(args: string[]): SubmitOptions {
     ...optionalPositiveInteger(args, "--nodes", "nodes"),
     image: requiredOption(args, "--image"),
     maxTimeHours: requiredPositiveNumber(args, "--max-time"),
+    ...optionalPriority(args),
     ...optionalNumber(args, "--shm-size", "shmSizeGiB"),
     excludeNodes: repeatedOption(args, "--exclude-node"),
   };
+}
+
+function optionalPriority(args: string[]): { priority?: "low" | "high" } {
+  const raw = option(args, "--priority");
+  if (raw === undefined) return {};
+  const priority = raw.toLowerCase();
+  if (priority !== "low" && priority !== "high") {
+    throw new SiimitError("--priority must be low or high.");
+  }
+  return { priority };
 }
 
 export function numericOption(args: string[], name: string, fallback: number): number {

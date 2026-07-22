@@ -2,7 +2,7 @@ import type { AppConfig } from "../config";
 import type { InspireClient } from "../platform/client";
 import { wrapShellCommand } from "../shared/shell";
 import { resolvePrivateImage } from "../platform/catalog/images";
-import { resolveProject } from "../platform/catalog/projects";
+import { resolveProject, taskPriorityValue, type TaskPriorityLevel } from "../platform/catalog/projects";
 import { resolveQuota } from "../platform/catalog/quotas";
 import { resolveWorkspace } from "../platform/catalog/workspaces";
 
@@ -15,6 +15,7 @@ export interface SubmitOptions {
   nodes?: number;
   image: string;
   maxTimeHours: number;
+  priority?: TaskPriorityLevel;
   shmSizeGiB?: number;
   excludeNodes: string[];
 }
@@ -26,13 +27,14 @@ export async function buildSubmissionPayload(
 ): Promise<Record<string, unknown>> {
   const workspaceId = await resolveWorkspace(client, config.workspace);
   const project = await resolveProject(client, workspaceId, options.project);
+  const taskPriority = taskPriorityValue(project, options.priority);
   const quota = await resolveQuota(
     client,
     workspaceId,
     options.group,
     options.gpus,
     project.id,
-    project.maxPriority,
+    taskPriority,
   );
   const image = await resolvePrivateImage(client, workspaceId, options.image);
   const resourceSpec: Record<string, unknown> = {
@@ -63,7 +65,7 @@ export async function buildSubmissionPayload(
     project_id: project.id,
     workspace_id: workspaceId,
     logic_compute_group_id: quota.groupId,
-    task_priority: project.maxPriority,
+    task_priority: taskPriority,
     framework_config: [frameworkConfig],
   };
   payload.max_running_time_ms = String(Math.trunc(options.maxTimeHours * 3_600_000));

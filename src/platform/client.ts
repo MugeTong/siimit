@@ -31,7 +31,7 @@ export class InspireClient {
       const message = String(metadata.Error.Message ?? "unknown error");
       const priority = Number(payload.task_priority);
       const advice = /优先级|priority/i.test(message) && Number.isFinite(priority)
-        ? ` Requested priority: ${priority}. Run \`siimit projects\` to see the project maximum, then omit an explicit priority or use that value.`
+        ? ` Requested priority: ${priority}. Run \`siimit projects\` to see whether low or high is available.`
         : "";
       throw new ApiError(`Inspire rejected the task: ${code}: ${message}.${advice}`);
     }

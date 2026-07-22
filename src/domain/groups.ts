@@ -1,6 +1,6 @@
 import type { InspireClient } from "../platform/client";
 import { ConfigurationError } from "../errors";
-import { resolveProject } from "../platform/catalog/projects";
+import { resolveProject, taskPriorityValue } from "../platform/catalog/projects";
 import { resolveWorkspace } from "../platform/catalog/workspaces";
 import { renderTable } from "../shared/table";
 import { asRecord as record, records as arrayOfRecords } from "../shared/records";
@@ -66,7 +66,7 @@ export async function listGroups(
         schedule_config_type: "SCHEDULE_CONFIG_TYPE_TRAIN",
         logic_compute_group_id: groupId,
         project_id: project.id,
-        task_priority: project.maxPriority,
+        task_priority: taskPriorityValue(project),
       });
       const priceData = prices.data;
       const priceRows = Array.isArray(priceData)

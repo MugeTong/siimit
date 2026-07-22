@@ -43,6 +43,7 @@ export async function runSubmit(args: string[]): Promise<void> {
     job_id: submission.jobId ?? null,
     status: String(submission.result.status ?? "job_queuing").replace(/^job_/, "").toUpperCase(),
     resource: formatFrameworkResource(framework),
+    priority: priorityLabel(payload.task_priority),
     task_priority: payload.task_priority,
   });
 }
@@ -62,13 +63,17 @@ function renderDryRunSummary(
     `Project: ${options.project}`,
     `Group: ${options.group}`,
     `Resource: ${nodes > 1 ? `${nodes} nodes × ` : ""}${resource}, ${cpu} CPU, ${memory} GiB per node`,
-    `Priority: ${String(payload.task_priority ?? "platform default")}`,
+    `Priority: ${priorityLabel(payload.task_priority)} (${String(payload.task_priority)})`,
     `Image: ${image}`,
     `Max time: ${options.maxTimeHours} hour(s)`,
     `Command: ${options.command}`,
     "",
     "Use --dry-run --json to print the complete platform payload.",
   ].join("\n");
+}
+
+function priorityLabel(value: unknown): "low" | "high" {
+  return Number(value) >= 4 ? "high" : "low";
 }
 
 function emit(value: unknown): void {

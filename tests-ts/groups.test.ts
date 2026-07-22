@@ -47,7 +47,7 @@ class FakeClient {
     if (path.includes("resource_prices/logic_compute_groups")) {
       expect(body.logic_compute_group_id).toBe("lcg-1");
       expect(body.project_id).toBe("project-1");
-      expect(body.task_priority).toBe(6);
+      expect(body.task_priority).toBe(4);
       return { data: [{ gpu_count: 8 }, { gpu_count: 2 }, { gpu_count: 4 }, { gpu_count: 8 }] };
     }
     throw new Error(`Unexpected POST ${path}`);

@@ -4,6 +4,8 @@ import { buildSubmissionPayload } from "../src/domain/submission";
 import { DEFAULT_APP_CONFIG } from "../src/config";
 
 class FakeClient {
+  constructor(private readonly expectedPriority = 4) {}
+
   async getJson(path: string): Promise<Record<string, unknown>> {
     expect(path).toBe("/api/v1/user/routes/default");
     return {
@@ -25,7 +27,7 @@ class FakeClient {
     if (path.endsWith("/resource_prices/logic_compute_groups")) {
       expect(body.schedule_config_type).toBe("SCHEDULE_CONFIG_TYPE_TRAIN");
       expect(body.project_id).toBe("project-1");
-      expect(body.task_priority).toBe(7);
+      expect(body.task_priority).toBe(this.expectedPriority);
       return {
         data: [{
           quota_id: "quota-1",
@@ -62,7 +64,7 @@ class FakeClient {
 
 describe("submission payload", () => {
   test("resolves names and builds CreateJobConsole payload", async () => {
-    const payload = await buildSubmissionPayload(new FakeClient() as InspireClient, {
+    const payload = await buildSubmissionPayload(new FakeClient() as unknown as InspireClient, {
       name: "train-a",
       command: "python -c 'raise SystemExit(7)'",
       project: "示例项目",
@@ -77,7 +79,7 @@ describe("submission payload", () => {
     expect(payload.workspace_id).toBe("ws-1");
     expect(payload.project_id).toBe("project-1");
     expect(payload.logic_compute_group_id).toBe("lcg-1");
-    expect(payload.task_priority).toBe(7);
+    expect(payload.task_priority).toBe(4);
     expect(payload.exclude_nodes).toEqual(["node-1"]);
     expect(payload.max_running_time_ms).toBe("5400000");
     const config = (payload.framework_config as Record<string, unknown>[])[0]!;
@@ -85,5 +87,20 @@ describe("submission payload", () => {
     expect(config.image).toBe("registry.internal/team/train:latest");
     expect(config.image_type).toBe("SOURCE_PRIVATE");
     expect((config.resource_spec_price as Record<string, unknown>).quota_id).toBe("quota-1");
+  });
+
+  test("allows explicitly selecting low priority", async () => {
+    const payload = await buildSubmissionPayload(new FakeClient(1) as unknown as InspireClient, {
+      name: "train-low",
+      command: "true",
+      project: "示例项目",
+      group: "H200训练区",
+      gpus: 4,
+      image: "train:latest",
+      maxTimeHours: 1,
+      priority: "low",
+      excludeNodes: [],
+    }, { ...DEFAULT_APP_CONFIG, workspace: "训练空间" });
+    expect(payload.task_priority).toBe(1);
   });
 });

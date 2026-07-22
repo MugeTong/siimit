@@ -4,7 +4,27 @@ import type { InspireClient } from "../client";
 
 export interface ResolvedProject {
   id: string;
-  maxPriority: number;
+  priorityLimit: number;
+}
+
+export type TaskPriorityLevel = "low" | "high";
+
+export function availableTaskPriorities(priorityLimit: number): TaskPriorityLevel[] {
+  return priorityLimit >= 4 ? ["low", "high"] : ["low"];
+}
+
+export function taskPriorityValue(
+  project: ResolvedProject,
+  requested?: TaskPriorityLevel,
+): 1 | 4 {
+  const available = availableTaskPriorities(project.priorityLimit);
+  const selected = requested ?? available.at(-1)!;
+  if (!available.includes(selected)) {
+    throw new ConfigurationError(
+      `Priority ${selected} is not available for this project. Available priorities: ${available.join(", ")}.`,
+    );
+  }
+  return selected === "high" ? 4 : 1;
 }
 
 export async function resolveProject(
@@ -22,6 +42,9 @@ export async function resolveProject(
   if (!project) throw new ConfigurationError(`No project exactly matches ${JSON.stringify(requested)}.`);
   const id = String(project.id ?? "");
   if (!id) throw new ApiError("Matched project has no id.");
-  const maxPriority = Number(project.priority_name ?? 10);
-  return { id, maxPriority: Number.isInteger(maxPriority) ? maxPriority : 10 };
+  const namedPriority = Number(project.priority_name);
+  const priorityLimit = Number.isFinite(namedPriority)
+    ? namedPriority
+    : String(project.priority_level ?? "").toUpperCase() === "HIGH" ? 4 : 1;
+  return { id, priorityLimit };
 }
