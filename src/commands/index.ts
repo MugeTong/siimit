@@ -11,6 +11,7 @@ import {
   removeCommand,
   submitCommand,
 } from "./jobs";
+import { logsCommand } from "./logs";
 import { groupsCommand, imagesCommand, projectsCommand } from "./platform";
 
 const versionCommand: Command = {
@@ -109,6 +110,7 @@ export const commands: Record<string, Command> = {
   projects: projectsCommand,
   ls: listCommand,
   get: getCommand,
+  logs: logsCommand,
   cancel: cancelCommand,
   remove: removeCommand,
   submit: submitCommand,

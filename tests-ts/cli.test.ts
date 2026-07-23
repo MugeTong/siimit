@@ -87,7 +87,7 @@ describe("CLI onboarding", () => {
   });
 
   test("query help explains structured output", () => {
-    for (const command of ["projects", "groups", "images", "ls", "get"]) {
+    for (const command of ["projects", "groups", "images", "ls", "get", "logs"]) {
       expect(run(command, "--help").stdout).toContain("--json");
     }
   });

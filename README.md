@@ -163,6 +163,9 @@ siimit submit \
 ```bash
 siimit ls
 siimit get JOB_ID
+siimit logs JOB_ID
+siimit logs JOB_ID --all
+siimit logs JOB_ID --events
 siimit cancel JOB_ID
 siimit remove JOB_ID
 ```
@@ -172,6 +175,8 @@ siimit remove JOB_ID
 - `--wide`：不截断名称和 ID
 - `--json`：输出结构化 JSON
 - `get --raw`：输出完整平台原始响应，仅建议排障时使用
+
+`logs` 默认按时间正序展示前 200 条容器 stdout/stderr；使用 `--all` 可自动读取全部内容，也可用 `--limit NUMBER` 指定数量。增加 `--events` 可查看调度、镜像拉取和容器生命周期事件，也可以通过 `--order asc|desc` 指定顺序。当前不支持 `--follow`。
 
 `remove` 是幂等操作；重复删除已不存在的任务不会让自动化脚本失败。
 
