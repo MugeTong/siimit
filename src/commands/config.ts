@@ -6,7 +6,7 @@ export const configCommand: Command = {
   name: "config",
   short: "show resolved configuration",
   description: "Show the configuration path or resolved non-secret settings.",
-  usage: "siimit config <path|show>",
+  usage: "siimit config [path|show]",
   maxPositionals: 1,
   details: [
     "Actions:",
@@ -17,7 +17,9 @@ export const configCommand: Command = {
   ].join("\n"),
   async run(args) {
     if (args[0] === "path") return console.log(appConfigPath());
-    if (args[0] === "show") return console.log(JSON.stringify(await loadAppConfig(), null, 2));
-    throw new SiimitError("Usage: siimit config <path|show>");
+    if (args[0] === undefined || args[0] === "show") {
+      return console.log(JSON.stringify(await loadAppConfig(), null, 2));
+    }
+    throw new SiimitError("Usage: siimit config [path|show]");
   },
 };

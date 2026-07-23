@@ -1,6 +1,7 @@
 import { ApiError } from "../errors";
 import type { InspireClient } from "../platform/client";
 import { asRecord as record, records } from "../shared/records";
+import { normalizeTime } from "../shared/time";
 import { getJob } from "./job-actions";
 
 export type LogOrder = "asc" | "desc";
@@ -20,7 +21,9 @@ export interface JobEvent {
   source: string;
   message: string;
   firstTimestamp: string;
+  firstTimestampMs: number | null;
   lastTimestamp: string;
+  lastTimestampMs: number | null;
   objectType: string;
   objectId: string;
 }
@@ -110,17 +113,12 @@ export async function getJobEvents(
     kind: "events",
     order,
     total: number(result.total),
-    items: records(result.events).map((item) => ({
-      type: String(item.type ?? ""),
-      reason: String(item.reason ?? ""),
-      source: String(item.from ?? ""),
-      message: String(item.message ?? ""),
-      firstTimestamp: String(item.first_timestamp ?? ""),
-      lastTimestamp: String(item.last_timestamp ?? ""),
-      objectType: String(item.object_type ?? ""),
-      objectId: String(item.object_id ?? ""),
-    })),
+    items: records(result.events).map(jobEvent),
   };
+}
+
+export function isPlatformHeartbeat(log: ContainerLog): boolean {
+  return log.message === "wait done file (retry after 1 second)...";
 }
 
 async function jobLogRange(
@@ -173,6 +171,23 @@ function containerLog(item: Record<string, unknown>): ContainerLog {
     podName: String(item.pod_name ?? ""),
     node: String(item.node ?? ""),
     logId: String(item.log_id ?? ""),
+  };
+}
+
+function jobEvent(item: Record<string, unknown>): JobEvent {
+  const first = normalizeTime(item.first_timestamp);
+  const last = normalizeTime(item.last_timestamp);
+  return {
+    type: String(item.type ?? ""),
+    reason: String(item.reason ?? ""),
+    source: String(item.from ?? ""),
+    message: String(item.message ?? ""),
+    firstTimestamp: first.iso,
+    firstTimestampMs: first.milliseconds,
+    lastTimestamp: last.iso,
+    lastTimestampMs: last.milliseconds,
+    objectType: String(item.object_type ?? ""),
+    objectId: String(item.object_id ?? ""),
   };
 }
 

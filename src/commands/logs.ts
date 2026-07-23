@@ -2,6 +2,7 @@ import { SiimitError } from "../errors";
 import {
   getContainerLogs,
   getJobEvents,
+  isPlatformHeartbeat,
   type JobEvent,
   type LogOrder,
   type ContainerLog,
@@ -15,13 +16,14 @@ export const logsCommand: Command = {
   name: "logs",
   short: "show container output or job events",
   description: "Read container stdout/stderr or platform scheduling events for a training job.",
-  usage: "siimit logs <job-id> [--events] [--order asc|desc] [--limit NUMBER | --all] [--json]",
+  usage: "siimit logs <job-id> [--events] [--system] [--order asc|desc] [--limit NUMBER | --all] [--json]",
   valueOptions: ["--order", "--limit"],
-  flagOptions: ["--events", "--all", "--json"],
+  flagOptions: ["--events", "--system", "--all", "--json"],
   maxPositionals: 1,
   details: [
     "Options:",
     "  --events        Show platform and Kubernetes events instead of container output",
+    "  --system        Include platform heartbeat lines in container output",
     "  --order ORDER   asc for oldest-first, desc for newest-first (default: asc)",
     "  --limit NUMBER  Stop after NUMBER entries (default: 200)",
     "  --all           Load all container logs",
@@ -42,6 +44,9 @@ export const logsCommand: Command = {
     if (all && args.includes("--events")) {
       throw new SiimitError("--all currently applies to container logs, not --events.");
     }
+    if (args.includes("--system") && args.includes("--events")) {
+      throw new SiimitError("--system applies to container logs, not --events.");
+    }
     const limit = all ? undefined : parseLimit(requestedLimit);
     const order = parseOrder(option(args, "--order"));
     const result = args.includes("--events")
@@ -54,7 +59,13 @@ export const logsCommand: Command = {
     if (result.kind === "events") {
       for (const event of result.items as JobEvent[]) console.log(formatEvent(event));
     } else {
-      for (const log of result.items as ContainerLog[]) console.log(formatLog(log));
+      const logs = result.items as ContainerLog[];
+      const visible = args.includes("--system") ? logs : logs.filter((log) => !isPlatformHeartbeat(log));
+      for (const log of visible) console.log(formatLog(log));
+      const hidden = logs.length - visible.length;
+      if (hidden > 0) {
+        console.error(`Hidden ${hidden} platform heartbeat line${hidden === 1 ? "" : "s"}. Use --system to show them.`);
+      }
     }
     if (result.total > result.items.length) {
       console.error(`Showing ${result.items.length} of ${result.total} entries. Adjust --order to view the opposite end.`);

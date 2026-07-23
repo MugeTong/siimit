@@ -12,7 +12,7 @@ Siimit 是一次性命令行程序，不是常驻服务。`bun dev` 只会运行
 curl -fsSL https://raw.githubusercontent.com/MugeTong/siimit/refs/heads/main/scripts/install.sh | bash
 ```
 
-安装脚本会下载最新 Release，并安装到 `~/.local/bin/siimit`。
+安装脚本会下载最新 Release，校验 SHA-256 后安装到 `~/.local/bin/siimit`。
 
 从源码开发或在首次发布前安装，需要先准备 Bun：
 
@@ -184,7 +184,7 @@ siimit remove JOB_ID
 - `--json`：输出结构化 JSON
 - `get --raw`：输出完整平台原始响应，仅建议排障时使用
 
-`logs` 默认按时间正序展示前 200 条容器 stdout/stderr；使用 `--all` 可自动读取全部内容，也可用 `--limit NUMBER` 指定数量。增加 `--events` 可查看调度、镜像拉取和容器生命周期事件，也可以通过 `--order asc|desc` 指定顺序。当前不支持 `--follow`。
+`logs` 默认按时间正序展示前 200 条容器 stdout/stderr，并隐藏平台重复的等待心跳；使用 `--system` 可显示完整原始文本。使用 `--all` 可自动读取全部内容，也可用 `--limit NUMBER` 指定数量。增加 `--events` 可查看调度、镜像拉取和容器生命周期事件，也可以通过 `--order asc|desc` 指定顺序。`--json` 始终保留完整日志。当前不支持 `--follow`。
 
 `remove` 是幂等操作；重复删除已不存在的任务不会让自动化脚本失败。
 
@@ -199,7 +199,7 @@ siimit config path
 查看解析后的配置：
 
 ```bash
-siimit config show
+siimit config
 ```
 
 默认配置位于 `~/.config/siimit/config.json`：

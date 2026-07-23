@@ -29,5 +29,5 @@ jobs:
       - name: Upload release assets
         uses: softprops/action-gh-release@v3
         with:
-          files: dist/*.xz
+          files: dist/*.xz*
           fail_on_unmatched_files: true

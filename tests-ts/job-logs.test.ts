@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
-import { getContainerLogs, getJobEvents } from "../src/domain/job-logs";
+import {
+  getContainerLogs,
+  getJobEvents,
+  isPlatformHeartbeat,
+} from "../src/domain/job-logs";
 import type { InspireClient } from "../src/platform/client";
 
 class FakeClient {
@@ -115,5 +119,23 @@ describe("job logs", () => {
       sorter: [{ field: "last_timestamp", sort: "ascend" }],
     });
     expect(result.items[0]?.reason).toBe("Scheduled");
+    expect(result.items[0]?.firstTimestamp).toBe("1970-01-01T00:00:01.000Z");
+    expect(result.items[0]?.firstTimestampMs).toBe(1000);
+    expect(result.items[0]?.lastTimestamp).toBe("1970-01-01T00:00:02.000Z");
+    expect(result.items[0]?.lastTimestampMs).toBe(2000);
+  });
+
+  test("only recognizes the exact platform heartbeat line", () => {
+    const log = (message: string) => ({
+      message,
+      timestampMs: null,
+      timestamp: "",
+      podName: "",
+      node: "",
+      logId: "",
+    });
+    expect(isPlatformHeartbeat(log("wait done file (retry after 1 second)..."))).toBe(true);
+    expect(isPlatformHeartbeat(log("wait done file failed"))).toBe(false);
+    expect(isPlatformHeartbeat(log("user: wait done file (retry after 1 second)..."))).toBe(false);
   });
 });

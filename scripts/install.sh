@@ -2,31 +2,36 @@
 set -euo pipefail
 
 # Check required dependencies
-if ! command -v xz &>/dev/null; then
-    printf "\033[31merror:\033[0m 'xz' is required but not installed.\n"
-    exit 1
-fi
-if ! command -v curl &>/dev/null; then
-    printf "\033[31merror:\033[0m 'curl' is required but not installed.\n"
-    exit 1
-fi
+for dependency in xz curl sha256sum mktemp; do
+    if ! command -v "$dependency" &>/dev/null; then
+        printf "\033[31merror:\033[0m '%s' is required but not installed.\n" "$dependency"
+        exit 1
+    fi
+done
 
 SYSTEM=$(uname -s)
 ARCH=$(uname -m)
 
 PKG_URL="https://github.com/MugeTong/siimit/releases/latest/download/siimit-${SYSTEM,,}-${ARCH}.xz"
-PKG_PATH="/tmp/siimit-${SYSTEM,,}-${ARCH}.xz"
+CHECKSUM_URL="${PKG_URL}.sha256"
 INSTALL_DIR="$HOME/.local/bin"
-TEMP_BINARY="/tmp/siimit-${SYSTEM,,}-${ARCH}"
+TEMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/siimit-install.XXXXXXXX")
+PKG_NAME="siimit-${SYSTEM,,}-${ARCH}.xz"
+PKG_PATH="$TEMP_DIR/$PKG_NAME"
+CHECKSUM_PATH="$PKG_PATH.sha256"
+TEMP_BINARY="$TEMP_DIR/siimit"
+trap 'rm -rf "$TEMP_DIR"' EXIT
 
-# Download the binary from github releases
+# Download and verify the binary from GitHub Releases
 printf "\033[1m\033[36m==>\033[0m\033[1m Downloading siimit...\033[0m\n"
 curl -fsSLo "$PKG_PATH" "$PKG_URL"
+curl -fsSLo "$CHECKSUM_PATH" "$CHECKSUM_URL"
+printf "\033[1m\033[36m==>\033[0m\033[1m Verifying siimit...\033[0m\n"
+(cd "$TEMP_DIR" && sha256sum -c "$PKG_NAME.sha256")
 
 # Unzip the binary and move it to the install directory
 printf "\033[1m\033[36m==>\033[0m\033[1m Extracting siimit...\033[0m\n"
 xz -d -c "$PKG_PATH" > "$TEMP_BINARY"
-rm -f "$PKG_PATH"
 
 # Install the binary
 printf "\033[1m\033[36m==>\033[0m\033[1m Installing siimit...\033[0m\n"

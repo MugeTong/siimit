@@ -91,4 +91,14 @@ describe("CLI onboarding", () => {
       expect(run(command, "--help").stdout).toContain("--json");
     }
   });
+
+  test("config defaults to showing the resolved configuration", () => {
+    const result = run("config");
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      workspace: "分布式训练空间",
+      nodes: 1,
+      framework: "pytorch",
+    });
+  });
 });
