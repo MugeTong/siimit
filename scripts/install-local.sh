@@ -29,7 +29,7 @@ fi
 
 # Verify the local release file
 printf "\033[1m\033[36m==>\033[0m\033[1m Verifying siimit...\033[0m\n"
-(cd "$(dirname "$PKG_PATH")" && sha256sum -c "$(basename "$CHECKSUM_PATH")")
+(cd "$(dirname "$PKG_PATH")" && sha256sum -c "$(basename "$CHECKSUM_PATH")" >/dev/null)
 
 # Unzip the binary and move it to the install directory
 printf "\033[1m\033[36m==>\033[0m\033[1m Extracting siimit...\033[0m\n"
