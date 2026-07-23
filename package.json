@@ -1,7 +1,7 @@
 {
   "name": "Siimit",
   "version": "0.14.0",
-  "description": "A small, safe CLI for logging in to Inspire and submitting training jobs",
+  "description": "A CLI for logging and submitting training jobs",
   "type": "module",
   "author": {
     "name": "MugeTong",

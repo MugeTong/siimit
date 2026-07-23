@@ -15,9 +15,9 @@ try {
   }
 
   // Fetch the command constructor from the commands map and execute it
-  const Ctor = commands[command];
-  if (!Ctor) throw new SiimitError(`Unknown command: ${command}`);
-  await new Ctor().handle(rest);
+  const CommandCtor = commands[command];
+  if (!CommandCtor) throw new SiimitError(`Unknown command: ${command}`);
+  await new CommandCtor().handle(rest);
 
 } catch (error: unknown) {
   console.error(`Error: ${error instanceof Error ? error.message : String(error)}`);

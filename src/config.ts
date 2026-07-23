@@ -19,7 +19,7 @@ const storageCookieSchema = z.object({
 });
 
 export const browserSessionSchema = z.object({
-  base_url: z.string().url(),
+  base_url: z.url(),
   username: z.string().nullable().optional(),
   created_at: z.number().default(() => Date.now() / 1000),
   storage_state: z.object({
@@ -35,7 +35,7 @@ export type StorageCookie = z.infer<typeof storageCookieSchema>;
 const credentialsSchema = z.object({
   username: z.string().min(1),
   password: z.string().min(1),
-  base_url: z.string().url().default(DEFAULT_BASE_URL),
+  base_url: z.url().default(DEFAULT_BASE_URL),
 });
 
 export type Credentials = z.infer<typeof credentialsSchema>;
