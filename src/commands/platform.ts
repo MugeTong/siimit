@@ -4,7 +4,7 @@ import { listVisibleImages, renderImages } from "../domain/images";
 import { listParticipatingProjects, renderProjects } from "../domain/projects";
 import type { Command } from "./command";
 import { option } from "./args";
-import { withReadClient } from "./runtime";
+import { withClient } from "./runtime";
 
 export const groupsCommand: Command = {
   name: "groups",
@@ -25,7 +25,7 @@ export const groupsCommand: Command = {
   async run(args) {
     const config = await loadAppConfig();
     const project = option(args, "--project") ?? option(args, "-p");
-    const rows = await withReadClient((client) => listGroups(client, config.workspace, project));
+    const rows = await withClient((client) => listGroups(client, config.workspace, project));
     if (args.includes("--json")) console.log(JSON.stringify(rows, null, 2));
     else {
       console.log(renderGroups(rows, config.workspace, args.includes("--wide")));
@@ -50,7 +50,7 @@ export const imagesCommand: Command = {
   ].join("\n"),
   async run(args) {
     const config = await loadAppConfig();
-    const images = await withReadClient((client) => listVisibleImages(client, config));
+    const images = await withClient((client) => listVisibleImages(client, config));
     console.log(args.includes("--json")
       ? JSON.stringify(images, null, 2)
       : renderImages(images, args.includes("--wide")));
@@ -72,7 +72,7 @@ export const projectsCommand: Command = {
     "PRIORITIES shows whether low, or both low and high, may be requested.",
   ].join("\n"),
   async run(args) {
-    const rows = await withReadClient(listParticipatingProjects);
+    const rows = await withClient(listParticipatingProjects);
     console.log(args.includes("--json")
       ? JSON.stringify(rows, null, 2)
       : renderProjects(rows, args.includes("--wide")));

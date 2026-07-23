@@ -6,7 +6,15 @@ Siimit 是一次性命令行程序，不是常驻服务。`bun dev` 只会运行
 
 ## 安装
 
-项目使用 Bun 构建：
+首个 GitHub Release 发布后，可以直接安装预编译的 Linux x86_64 二进制文件：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/MugeTong/siimit/refs/heads/main/scripts/install.sh | bash
+```
+
+安装脚本会下载最新 Release，并安装到 `~/.local/bin/siimit`。
+
+从源码开发或在首次发布前安装，需要先准备 Bun：
 
 ```bash
 bun install

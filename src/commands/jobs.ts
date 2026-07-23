@@ -8,7 +8,7 @@ import { InspireClient } from "../platform/client";
 import { firstFramework, formatFrameworkResource } from "../shared/resource";
 import { numericOption, option, parseSubmitOptions } from "./args";
 import type { Command } from "./command";
-import { loginWithSavedCredentials, sessionOrLogin, withMutationClient, withReadClient } from "./runtime";
+import { loginWithSavedCredentials, sessionOrLogin, withClient } from "./runtime";
 import { confirm } from "./prompts";
 
 export const listCommand: Command = {
@@ -35,7 +35,7 @@ export const listCommand: Command = {
       ...(option(args, "--keyword") ? { keyword: option(args, "--keyword")! } : {}),
       limit: numericOption(args, "--limit", 20),
     };
-    const rows = await withReadClient((client) => listCurrentUserJobs(client, options));
+    const rows = await withClient((client) => listCurrentUserJobs(client, options));
     console.log(args.includes("--json")
       ? JSON.stringify(rows, null, 2)
       : renderJobs(rows, args.includes("--wide")));
@@ -58,7 +58,7 @@ export const getCommand: Command = {
     "Use --raw only for debugging; it may include verbose platform metadata.",
   ].join("\n"),
   async run(args) {
-    const job = await withReadClient((client) => getJob(client, validateJobId(args[0])));
+    const job = await withClient((client) => getJob(client, validateJobId(args[0])));
     if (args.includes("--raw")) return emit(job.raw);
     if (!args.includes("--json")) return console.log(renderJob(job));
     emit({
@@ -86,14 +86,14 @@ export const cancelCommand: Command = mutationCommand(
   "cancel",
   "stop a running or queued job",
   "Stop a running or queued training job.",
-  async (jobId) => ({ cancelled: true, job_id: jobId, result: await withMutationClient((client) => cancelJob(client, jobId)) }),
+  async (jobId) => ({ cancelled: true, job_id: jobId, result: await withClient((client) => cancelJob(client, jobId)) }),
 );
 
 export const removeCommand: Command = mutationCommand(
   "remove",
   "delete a training job record",
   "Permanently delete a stopped or completed training job record.",
-  async (jobId) => ({ removed: true, job_id: jobId, ...await withMutationClient((client) => removeJob(client, jobId)) }),
+  async (jobId) => ({ removed: true, job_id: jobId, ...await withClient((client) => removeJob(client, jobId)) }),
 );
 
 export const submitCommand: Command = {

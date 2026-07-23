@@ -9,7 +9,7 @@ import {
 import { validateJobId } from "../domain/job-actions";
 import type { Command } from "./command";
 import { option } from "./args";
-import { withReadClient } from "./runtime";
+import { withClient } from "./runtime";
 
 export const logsCommand: Command = {
   name: "logs",
@@ -45,8 +45,8 @@ export const logsCommand: Command = {
     const limit = all ? undefined : parseLimit(requestedLimit);
     const order = parseOrder(option(args, "--order"));
     const result = args.includes("--events")
-      ? await withReadClient((client) => getJobEvents(client, jobId, limit ?? 200, order))
-      : await withReadClient((client) => getContainerLogs(client, jobId, limit, order));
+      ? await withClient((client) => getJobEvents(client, jobId, limit ?? 200, order))
+      : await withClient((client) => getContainerLogs(client, jobId, limit, order));
     if (args.includes("--json")) {
       console.log(JSON.stringify(result, null, 2));
       return;

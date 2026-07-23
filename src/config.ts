@@ -18,7 +18,7 @@ const storageCookieSchema = z.object({
   sameSite: z.string().optional(),
 });
 
-export const browserSessionSchema = z.object({
+const browserSessionSchema = z.object({
   base_url: z.url(),
   username: z.string().nullable().optional(),
   created_at: z.number().default(() => Date.now() / 1000),
@@ -40,7 +40,7 @@ const credentialsSchema = z.object({
 
 export type Credentials = z.infer<typeof credentialsSchema>;
 
-export const appConfigSchema = z.object({
+const appConfigSchema = z.object({
   workspace: z.string().min(1).default("分布式训练空间"),
   nodes: z.number().int().positive().default(1),
   framework: z.string().min(1).default("pytorch"),
@@ -48,26 +48,18 @@ export const appConfigSchema = z.object({
 
 export type AppConfig = z.infer<typeof appConfigSchema>;
 export const DEFAULT_APP_CONFIG: AppConfig = appConfigSchema.parse({});
-const DEPRECATED_APP_CONFIG_KEYS = [
-  "image_visibility",
-  "image_sources",
-  "priority_strategy",
-  "quota_strategy",
-  "nominal_cpu_per_gpu",
-  "nominal_memory_gib_per_gpu",
-] as const;
 
-export function configDir(): string {
+function configDir(): string {
   if (process.env.SIIMIT_CONFIG_DIR) return process.env.SIIMIT_CONFIG_DIR;
   const root = process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config");
   return join(root, "siimit");
 }
 
-export function sessionPath(): string {
+function sessionPath(): string {
   return join(configDir(), "session.json");
 }
 
-export function credentialsPath(): string {
+function credentialsPath(): string {
   return join(configDir(), "credentials.json");
 }
 
@@ -115,15 +107,7 @@ export async function loadCredentials(path = credentialsPath()): Promise<Credent
 
 export async function loadAppConfig(path = appConfigPath()): Promise<AppConfig> {
   try {
-    const raw = JSON.parse(await readFile(path, "utf8"));
-    const config = appConfigSchema.parse(raw);
-    if (
-      raw && typeof raw === "object"
-      && DEPRECATED_APP_CONFIG_KEYS.some((key) => key in raw)
-    ) {
-      await writePrivateJson(path, config);
-    }
-    return config;
+    return appConfigSchema.parse(JSON.parse(await readFile(path, "utf8")));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
       throw new ConfigurationError(`Cannot read siimit config: ${errorMessage(error)}`);

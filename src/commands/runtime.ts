@@ -19,7 +19,7 @@ export async function loginWithSavedCredentials(): Promise<BrowserSession> {
   return session;
 }
 
-export async function withReadClient<T>(operation: (client: InspireClient) => Promise<T>): Promise<T> {
+export async function withClient<T>(operation: (client: InspireClient) => Promise<T>): Promise<T> {
   try {
     return await operation(new InspireClient(await sessionOrLogin()));
   } catch (error) {
@@ -27,5 +27,3 @@ export async function withReadClient<T>(operation: (client: InspireClient) => Pr
     return operation(new InspireClient(await loginWithSavedCredentials()));
   }
 }
-
-export const withMutationClient = withReadClient;

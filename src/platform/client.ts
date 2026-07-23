@@ -6,7 +6,7 @@ export class InspireClient {
   private readonly http: CookieHttpClient;
   private readonly baseUrl: string;
 
-  constructor(private readonly session: BrowserSession, http?: CookieHttpClient) {
+  constructor(session: BrowserSession, http?: CookieHttpClient) {
     this.baseUrl = session.base_url.replace(/\/$/, "");
     this.http = http ?? CookieHttpClient.fromStorage(session.storage_state.cookies);
   }

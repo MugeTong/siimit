@@ -15,7 +15,7 @@ index.ts
 - `src/index.ts`: command routing only.
 - `src/commands/`: command metadata, dispatch helpers, argument parsing, and orchestration.
 - `src/shared/`: data-shape helpers with no platform or CLI dependencies.
-- `src/domain/`: business operations, normalization, and terminal rendering by user-facing concept.
+- `src/domain/`: business operations, normalization, and terminal rendering for submissions, jobs, logs, projects, groups, and images.
 - `src/platform/client.ts`, `http.ts`, `auth.ts`: Inspire transport and authentication.
 - `src/platform/catalog/`: focused platform lookups for workspaces, projects, quotas, and private images.
 - `src/config.ts`: schemas plus credential/session/application configuration persistence.

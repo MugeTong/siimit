@@ -25,19 +25,16 @@ fi
 # Unzip the binary and move it to the install directory
 printf "\033[1m\033[36m==>\033[0m\033[1m Extracting siimit...\033[0m\n"
 xz -d -c "$PKG_PATH" > "$TEMP_BINARY"
-sleep 0.3
 
 # Install the binary
 printf "\033[1m\033[36m==>\033[0m\033[1m Installing siimit...\033[0m\n"
 chmod +x "$TEMP_BINARY"
 mkdir -p "$INSTALL_DIR"
 mv "$TEMP_BINARY" "$INSTALL_DIR/siimit"
-sleep 0.3
 printf "\033[1m\033[32m\n✔ Siimit successfully installed!\033[0m\n\n"
 printf "    \033[90mVersion: $($INSTALL_DIR/siimit --version)\033[0m\n\n"
 printf "    \033[90mLocation: $INSTALL_DIR/siimit\033[0m\n\n"
 printf "    \033[90mNext: Run \033[1m\033[36msiimit --help\033[0m to get started.\033[0m\n"
-sleep 0.5
 
 # Detect whether the local bin directory is in the user's PATH
 if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
