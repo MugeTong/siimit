@@ -16,7 +16,16 @@ export class CookieHttpClient {
     const headers = new Headers(init.headers);
     const cookie = await this.jar.getCookieString(url);
     if (cookie) headers.set("cookie", cookie);
-    const response = await fetch(url, { ...init, headers, redirect: "manual" });
+    let response: Response;
+    try {
+      response = await fetch(url, { ...init, headers, redirect: "manual" });
+    } catch (error) {
+      const destination = safeOrigin(url);
+      const reason = error instanceof Error ? error.message : String(error);
+      throw new ApiError(
+        `Cannot connect to Inspire at ${destination}: ${reason}. Check INSPIRE_BASE_URL, network access, and proxy settings.`,
+      );
+    }
     await this.captureCookies(response, url);
 
     if (response.status === 429 && rateRetries > 0) {
@@ -90,6 +99,14 @@ export class CookieHttpClient {
       if (host) jar.setCookieSync(cookie, `${scheme}://${host}${stored.path}`);
     }
     return new CookieHttpClient(jar);
+  }
+}
+
+function safeOrigin(url: string): string {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return url;
   }
 }
 

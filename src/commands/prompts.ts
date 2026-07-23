@@ -38,3 +38,7 @@ export async function askHidden(prompt: string): Promise<string> {
     process.stdin.on("data", onData);
   });
 }
+
+export async function confirm(prompt: string): Promise<boolean> {
+  return /^(y|yes)$/i.test((await ask(`${prompt} [y/N]`)).trim());
+}

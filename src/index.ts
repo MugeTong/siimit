@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import { commands } from "./commands";
+import { execute } from "./commands/command";
 import { SiimitError } from "./errors";
 
 try {
@@ -14,10 +15,9 @@ try {
     command = "version";
   }
 
-  // Fetch the command constructor from the commands map and execute it
-  const CommandCtor = commands[command];
-  if (!CommandCtor) throw new SiimitError(`Unknown command: ${command}`);
-  await new CommandCtor().handle(rest);
+  const selected = commands[command];
+  if (!selected) throw new SiimitError(`Unknown command: ${command}`);
+  await execute(selected, rest);
 
 } catch (error: unknown) {
   console.error(`Error: ${error instanceof Error ? error.message : String(error)}`);

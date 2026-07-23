@@ -8,6 +8,7 @@ export function option(args: string[], name: string): string | undefined {
 }
 
 export function parseSubmitOptions(args: string[]): SubmitOptions {
+  validateSubmitArguments(args);
   const inlineCommand = option(args, "--command") ?? option(args, "-c");
   const commandFile = option(args, "--command-file");
   if (inlineCommand && commandFile) throw new SiimitError("Use either --command or --command-file, not both.");
@@ -38,6 +39,25 @@ export function parseSubmitOptions(args: string[]): SubmitOptions {
     ...optionalNumber(args, "--shm-size", "shmSizeGiB"),
     excludeNodes: repeatedOption(args, "--exclude-node"),
   };
+}
+
+const SUBMIT_VALUE_OPTIONS = new Set([
+  "--name", "-n", "--command", "-c", "--command-file", "--project", "-p",
+  "--group", "--gpus", "--nodes", "--image", "--max-time", "--priority",
+  "--shm-size", "--exclude-node",
+]);
+const SUBMIT_FLAG_OPTIONS = new Set(["--dry-run", "--json", "--yes"]);
+
+function validateSubmitArguments(args: string[]): void {
+  for (let index = 0; index < args.length; index++) {
+    const argument = args[index]!;
+    if (SUBMIT_VALUE_OPTIONS.has(argument)) {
+      index += 1;
+      continue;
+    }
+    if (SUBMIT_FLAG_OPTIONS.has(argument)) continue;
+    throw new SiimitError(`Unknown submit option: ${argument}. Run 'siimit submit --help' for usage.`);
+  }
 }
 
 function optionalPriority(args: string[]): { priority?: "low" | "high" } {

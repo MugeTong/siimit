@@ -1,6 +1,6 @@
 {
   "name": "Siimit",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "A CLI for logging and submitting training jobs",
   "type": "module",
   "author": {
@@ -18,7 +18,7 @@
     "typecheck": "tsc --noEmit",
     "build": "bun build --compile --minify --target bun-linux-x64 src/index.ts --outfile dist/siimit-linux-x86_64",
     "package": "xz -3 -f dist/siimit-linux-x86_64",
-    "install-local": "bash scripts/install-local.sh"
+    "install-local": "bun run build && bun run package && bash scripts/install-local.sh"
   },
   "dependencies": {
     "cheerio": "^1.1.2",
