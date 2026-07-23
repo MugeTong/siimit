@@ -27,7 +27,10 @@ printf "\033[1m\033[36m==>\033[0m\033[1m Downloading siimit...\033[0m\n"
 curl -fsSLo "$PKG_PATH" "$PKG_URL"
 curl -fsSLo "$CHECKSUM_PATH" "$CHECKSUM_URL"
 printf "\033[1m\033[36m==>\033[0m\033[1m Verifying siimit...\033[0m\n"
-(cd "$TEMP_DIR" && sha256sum -c "$PKG_NAME.sha256" >/dev/null)
+if ! (cd "$TEMP_DIR" && sha256sum -c "$PKG_NAME.sha256" &>/dev/null); then
+    printf "\033[31merror:\033[0m checksum verification failed; siimit was not installed.\n" >&2
+    exit 1
+fi
 
 # Unzip the binary and move it to the install directory
 printf "\033[1m\033[36m==>\033[0m\033[1m Extracting siimit...\033[0m\n"
