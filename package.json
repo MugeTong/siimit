@@ -1,5 +1,5 @@
 {
-  "name": "siimit",
+  "name": "Siimit",
   "version": "0.14.0",
   "description": "A small, safe CLI for logging in to Inspire and submitting training jobs",
   "type": "module",
@@ -10,9 +10,9 @@
     "dev": "bun run src/index.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "build": "bun build --compile --minify --sourcemap src/index.ts --outfile dist/siimit",
-    "package": "xz -9 -k -f dist/siimit",
-    "install:local": "bun run scripts/install-local.ts"
+    "build": "bun build --compile --minify --target bun-linux-x64 src/index.ts --outfile dist/siimit-linux-x86_64",
+    "package": "xz -3 -f dist/siimit-linux-x86_64",
+    "install": "bash scripts/install-local.sh"
   },
   "dependencies": {
     "cheerio": "^1.1.2",

@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Check required dependencies
+if ! command -v xz &>/dev/null; then
+    printf "\033[31merror:\033[0m 'xz' is required but not installed.\n"
+    exit 1
+fi
+
+SYSTEM=$(uname -s)
+ARCH=$(uname -m)
+
+PKG_PATH="./dist/siimit-${SYSTEM,,}-${ARCH}.xz"
+INSTALL_DIR="$HOME/.local/bin"
+TEMP_BINARY="/tmp/siimit-${SYSTEM,,}-${ARCH}"
+
+# Check if the binary exists
+if [ ! -f "$PKG_PATH" ]; then
+    printf "\033[1m\033[31mSiimit binary not found at\033[0m\n\n"
+    printf "    \033[90m $PKG_PATH\033[0m\n\n"
+    printf "Please run \033[1m\033[36mbun run build && bun run package\033[0m first.\n"
+    exit 1
+fi
+
+# Unzip the binary and move it to the install directory
+printf "\033[1m\033[36m==>\033[0m\033[1m Extracting siimit...\033[0m\n"
+xz -d -c "$PKG_PATH" > "$TEMP_BINARY"
+sleep 0.3
+
+# Install the binary
+printf "\033[1m\033[36m==>\033[0m\033[1m Installing siimit...\033[0m\n"
+chmod +x "$TEMP_BINARY"
+mkdir -p "$INSTALL_DIR"
+mv "$TEMP_BINARY" "$INSTALL_DIR/siimit"
+sleep 0.3
+printf "\033[1m\033[32m\n✔ Siimit successfully installed!\033[0m\n\n"
+printf "    \033[90mVersion: $($INSTALL_DIR/siimit --version)\033[0m\n\n"
+printf "    \033[90mLocation: $INSTALL_DIR/siimit\033[0m\n\n"
+printf "    \033[90mNext: Run \033[1m\033[36msiimit --help\033[0m to get started.\033[0m\n"
+sleep 0.5
+
+# Detect whether the local bin directory is in the user's PATH
+if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
+    printf "\033[1m\033[33m\n⚠ Warning: $INSTALL_DIR is not in your PATH.\033[0m\n"
+    printf "    \033[90mYou may want to add the following line to your shell configuration file (e.g., ~/.bashrc, ~/.zshrc):\033[0m\n"
+    printf "    \033[90mexport PATH=\"\$PATH:$INSTALL_DIR\"\033[0m\n"
+fi
