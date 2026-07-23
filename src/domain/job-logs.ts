@@ -5,6 +5,7 @@ import { normalizeTime } from "../shared/time";
 import { getJob } from "./job-actions";
 
 export type LogOrder = "asc" | "desc";
+export type JobEventScope = "all" | "job" | "instance";
 
 export interface ContainerLog {
   message: string;
@@ -32,6 +33,7 @@ export interface JobLogResult<T> {
   jobId: string;
   kind: "logs" | "events";
   order: LogOrder;
+  scope?: JobEventScope;
   total: number;
   items: T[];
 }
@@ -94,31 +96,53 @@ export async function getJobEvents(
   jobId: string,
   limit: number,
   order: LogOrder,
+  scope: JobEventScope = "instance",
 ): Promise<JobLogResult<JobEvent>> {
-  const range = await jobLogRange(client, jobId);
-  const response = await client.postJson("/api/v2/train?Action=ListJobEvents", {
-    page_num: 1,
-    page_size: limit,
-    filter: {
-      object_type: "instance",
-      object_ids: range.podNames,
-      start_last_timestamp: String(Math.floor(range.startMs / 1000)),
-      end_last_timestamp: String(Math.ceil(range.endMs / 1000)),
-    },
-    sorter: [{ field: "last_timestamp", sort: sortName(order) }],
-  });
-  const result = apiResult(response, "ListJobEvents");
+  const range = scope === "job" ? undefined : await jobLogRange(client, jobId);
+  const groups: Array<{ total: number; items: JobEvent[] }> = [];
+  if (scope === "all" || scope === "job") {
+    groups.push(await requestJobEvents(client, {
+      pageNum: -1,
+      pageSize: limit,
+      filter: { object_type: "job", object_ids: [jobId] },
+      sorter: [{ field: "last_timestamp", sort: sortName(order) }],
+    }));
+  }
+  if (scope === "all" || scope === "instance") {
+    groups.push(await requestJobEvents(client, {
+      page_num: 1,
+      page_size: limit,
+      filter: {
+        object_type: "instance",
+        object_ids: range!.podNames,
+        start_last_timestamp: String(Math.floor(range!.startMs / 1000)),
+        end_last_timestamp: String(Math.ceil(range!.endMs / 1000)),
+      },
+      sorter: [{ field: "last_timestamp", sort: sortName(order) }],
+    }));
+  }
+  const items = groups.flatMap((group) => group.items)
+    .sort((left, right) => compareEvents(left, right, order))
+    .slice(0, limit);
   return {
     jobId,
     kind: "events",
     order,
-    total: number(result.total),
-    items: records(result.events).map(jobEvent),
+    scope,
+    total: groups.reduce((sum, group) => sum + group.total, 0),
+    items,
   };
 }
 
 export function isPlatformHeartbeat(log: ContainerLog): boolean {
   return log.message === "wait done file (retry after 1 second)...";
+}
+
+export function isBenignPlatformEvent(event: JobEvent): boolean {
+  return (
+    event.reason === "JobReservingStart" ||
+    event.reason === "PodReservingStart"
+  ) && /\bexitCode\s*:\s*0\b/i.test(event.message);
 }
 
 async function jobLogRange(
@@ -132,8 +156,22 @@ async function jobLogRange(
   const startMs = number(job.raw.created_at ?? timeline.created);
   const endMs = number(job.raw.finished_at ?? timeline.finished) || Date.now();
   if (startMs <= 0) throw new ApiError("GetJob did not provide a valid creation time for log lookup.");
+  const instanceResponse = await client.postJson("/api/v2/train?Action=ListJobInstances", {
+    page_num: 1,
+    page_size: Math.max(instanceCount, 100),
+    job_id: jobId,
+  });
+  const instanceError = record(record(instanceResponse.ResponseMetadata)?.Error);
+  const instanceResult = instanceError
+    ? {}
+    : record(instanceResponse.Result) ?? record(instanceResponse.data) ?? {};
+  const discoveredNames = records(instanceResult.items)
+    .map((item) => String(item.name ?? "").trim())
+    .filter(Boolean);
   return {
-    podNames: Array.from({ length: instanceCount }, (_, index) => `${jobId}-worker-${index}`),
+    podNames: discoveredNames.length
+      ? discoveredNames
+      : Array.from({ length: instanceCount }, (_, index) => `${jobId}-worker-${index}`),
     startMs,
     endMs: Math.max(startMs, endMs),
   };
@@ -189,6 +227,28 @@ function jobEvent(item: Record<string, unknown>): JobEvent {
     objectType: String(item.object_type ?? ""),
     objectId: String(item.object_id ?? ""),
   };
+}
+
+async function requestJobEvents(
+  client: InspireClient,
+  body: Record<string, unknown>,
+): Promise<{ total: number; items: JobEvent[] }> {
+  const response = await client.postJson("/api/v2/train?Action=ListJobEvents", body);
+  const result = apiResult(response, "ListJobEvents");
+  return {
+    total: number(result.total),
+    items: records(result.events).map(jobEvent),
+  };
+}
+
+function compareEvents(left: JobEvent, right: JobEvent, order: LogOrder): number {
+  const timeDifference = (left.lastTimestampMs ?? 0) - (right.lastTimestampMs ?? 0);
+  if (timeDifference !== 0) return order === "asc" ? timeDifference : -timeDifference;
+  return eventScopeRank(left) - eventScopeRank(right);
+}
+
+function eventScopeRank(event: JobEvent): number {
+  return event.objectType === "job" ? 0 : 1;
 }
 
 function sameCursor(

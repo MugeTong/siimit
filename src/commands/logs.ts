@@ -2,8 +2,10 @@ import { SiimitError } from "../errors";
 import {
   getContainerLogs,
   getJobEvents,
+  isBenignPlatformEvent,
   isPlatformHeartbeat,
   type JobEvent,
+  type JobEventScope,
   type LogOrder,
   type ContainerLog,
 } from "../domain/job-logs";
@@ -16,14 +18,15 @@ export const logsCommand: Command = {
   name: "logs",
   short: "show container output or job events",
   description: "Read container stdout/stderr or platform scheduling events for a training job.",
-  usage: "siimit logs <job-id> [--events] [--system] [--order asc|desc] [--limit NUMBER | --all] [--json]",
-  valueOptions: ["--order", "--limit"],
+  usage: "siimit logs <job-id> [--events [--scope all|job|instance]] [--system] [--order asc|desc] [--limit NUMBER | --all] [--json]",
+  valueOptions: ["--order", "--limit", "--scope"],
   flagOptions: ["--events", "--system", "--all", "--json"],
   maxPositionals: 1,
   details: [
     "Options:",
     "  --events        Show platform and Kubernetes events instead of container output",
-    "  --system        Include platform heartbeat lines in container output",
+    "  --scope SCOPE   Event scope: instance, job, or all (default: instance)",
+    "  --system        Include hidden platform heartbeat and bookkeeping entries",
     "  --order ORDER   asc for oldest-first, desc for newest-first (default: asc)",
     "  --limit NUMBER  Stop after NUMBER entries (default: 200)",
     "  --all           Load all container logs",
@@ -44,28 +47,33 @@ export const logsCommand: Command = {
     if (all && args.includes("--events")) {
       throw new SiimitError("--all currently applies to container logs, not --events.");
     }
-    if (args.includes("--system") && args.includes("--events")) {
-      throw new SiimitError("--system applies to container logs, not --events.");
+    if (option(args, "--scope") !== undefined && !args.includes("--events")) {
+      throw new SiimitError("--scope requires --events.");
     }
     const limit = all ? undefined : parseLimit(requestedLimit);
     const order = parseOrder(option(args, "--order"));
+    const scope = parseScope(option(args, "--scope"));
     const result = args.includes("--events")
-      ? await withClient((client) => getJobEvents(client, jobId, limit ?? 200, order))
+      ? await withClient((client) => getJobEvents(client, jobId, limit ?? 200, order, scope))
       : await withClient((client) => getContainerLogs(client, jobId, limit, order));
     if (args.includes("--json")) {
       console.log(JSON.stringify(result, null, 2));
       return;
     }
     if (result.kind === "events") {
-      for (const event of result.items as JobEvent[]) console.log(formatEvent(event));
+      const events = result.items as JobEvent[];
+      const visible = args.includes("--system")
+        ? events
+        : events.filter((event) => !isBenignPlatformEvent(event));
+      const showSource = new Set(visible.map((event) => event.objectId)).size > 1;
+      for (const event of visible) console.log(formatEvent(event, showSource));
+      reportHidden(events.length - visible.length, "benign platform event");
     } else {
       const logs = result.items as ContainerLog[];
       const visible = args.includes("--system") ? logs : logs.filter((log) => !isPlatformHeartbeat(log));
-      for (const log of visible) console.log(formatLog(log));
-      const hidden = logs.length - visible.length;
-      if (hidden > 0) {
-        console.error(`Hidden ${hidden} platform heartbeat line${hidden === 1 ? "" : "s"}. Use --system to show them.`);
-      }
+      const showSource = new Set(visible.map((log) => log.podName)).size > 1;
+      for (const log of visible) console.log(formatLog(log, showSource));
+      reportHidden(logs.length - visible.length, "platform heartbeat line");
     }
     if (result.total > result.items.length) {
       console.error(`Showing ${result.items.length} of ${result.total} entries. Adjust --order to view the opposite end.`);
@@ -75,7 +83,7 @@ export const logsCommand: Command = {
 
 function positional(args: string[]): string | undefined {
   for (let index = 0; index < args.length; index++) {
-    if (args[index] === "--order" || args[index] === "--limit") {
+    if (args[index] === "--order" || args[index] === "--limit" || args[index] === "--scope") {
       index += 1;
       continue;
     }
@@ -99,15 +107,39 @@ function parseOrder(raw: string | undefined): LogOrder {
   throw new SiimitError("--order must be asc or desc.");
 }
 
-function formatLog(log: ContainerLog): string {
-  const prefix = [log.timestamp, log.podName].filter(Boolean).map((value) => `[${value}]`).join(" ");
+function parseScope(raw: string | undefined): JobEventScope {
+  if (raw === undefined) return "instance";
+  if (raw === "all" || raw === "job" || raw === "instance") return raw;
+  throw new SiimitError("--scope must be all, job, or instance.");
+}
+
+function formatLog(log: ContainerLog, showSource: boolean): string {
+  const prefix = [log.timestamp, showSource ? shortSource(log.podName) : ""]
+    .filter(Boolean)
+    .map((value) => `[${value}]`)
+    .join(" ");
   return prefix ? `${prefix} ${log.message}` : log.message;
 }
 
-function formatEvent(event: JobEvent): string {
-  const prefix = [event.lastTimestamp, event.type, event.reason, event.objectId]
+function formatEvent(event: JobEvent, showSource: boolean): string {
+  const prefix = [
+    event.lastTimestamp,
+    showSource ? shortSource(event.objectId) : "",
+    event.reason,
+  ]
     .filter(Boolean)
     .map((value) => `[${value}]`)
     .join(" ");
   return prefix ? `${prefix} ${event.message}` : event.message;
+}
+
+function shortSource(value: string): string {
+  const worker = value.match(/worker-\d+$/)?.[0];
+  return worker ?? (value.startsWith("job-") ? "job" : value);
+}
+
+function reportHidden(count: number, description: string): void {
+  if (count > 0) {
+    console.error(`Hidden ${count} ${description}${count === 1 ? "" : "s"}. Use --system to show them.`);
+  }
 }

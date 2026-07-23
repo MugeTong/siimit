@@ -138,7 +138,8 @@ siimit remove JOB_ID
 - `--all`：自动分页读取全部日志
 - `--order asc|desc`：指定顺序
 - `--events`：查看调度、镜像拉取和容器生命周期事件
-- `--system`：显示完整平台日志，包括等待心跳
+- `--scope instance|job|all`：选择实例级、任务级或全部事件，默认只显示实例事件
+- `--system`：显示完整平台日志和事件，包括等待心跳与正常退出记账事件
 - `--json`：输出完整、未过滤的结构化日志
 
 当前不支持 `--follow`。`remove` 是幂等操作，重复删除已不存在的任务不会让自动化脚本失败。
@@ -177,4 +178,3 @@ siimit help getting-started
 siimit submit --help
 siimit logs --help
 ```
-

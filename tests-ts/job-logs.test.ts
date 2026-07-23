@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import {
   getContainerLogs,
   getJobEvents,
+  isBenignPlatformEvent,
   isPlatformHeartbeat,
 } from "../src/domain/job-logs";
 import type { InspireClient } from "../src/platform/client";
@@ -12,6 +13,17 @@ class FakeClient {
 
   async postJson(path: string, body: Record<string, unknown>): Promise<Record<string, unknown>> {
     this.calls.push({ path, body });
+    if (path.includes("Action=ListJobInstances")) {
+      return {
+        Result: {
+          total: 2,
+          items: [
+            { name: "job-123-worker-0" },
+            { name: "job-123-worker-1" },
+          ],
+        },
+      };
+    }
     if (path.includes("Action=GetJobLog")) {
       return {
         Result: {
@@ -29,18 +41,20 @@ class FakeClient {
       };
     }
     if (path.includes("Action=ListJobEvents")) {
+      const filter = body.filter as Record<string, unknown>;
+      const scope = String(filter.object_type);
       return {
         Result: {
           total: 1,
           events: [{
             type: "Normal",
-            reason: "Scheduled",
+            reason: scope === "job" ? "SuccessfulCreatePod" : "Scheduled",
             from: "scheduler",
             message: "assigned",
             first_timestamp: "1",
-            last_timestamp: "2",
-            object_type: "instance",
-            object_id: "job-123-worker-0",
+            last_timestamp: scope === "job" ? "1" : "2",
+            object_type: scope,
+            object_id: scope === "job" ? "job-123" : "job-123-worker-0",
           }],
         },
       };
@@ -61,7 +75,7 @@ describe("job logs", () => {
   test("derives pods and requests container logs in the selected order", async () => {
     const client = new FakeClient();
     const result = await getContainerLogs(client as unknown as InspireClient, "job-123", 50, "desc");
-    expect(client.calls[1]).toEqual({
+    expect(client.calls[2]).toEqual({
       path: "/api/v2/train?Action=GetJobLog",
       body: {
         page_size: 50,
@@ -102,13 +116,18 @@ describe("job logs", () => {
     const client = new PaginatedClient();
     const result = await getContainerLogs(client as unknown as InspireClient, "job-123", undefined, "asc");
     expect(result.items.map((item) => item.message)).toEqual(["line-0", "line-1", "line-2", "line-3"]);
-    expect(client.calls[2]?.body.search_after).toEqual(["time-1", "log-1"]);
+    expect(client.calls[3]?.body.search_after).toEqual(["time-1", "log-1"]);
   });
 
   test("uses second timestamps for job events", async () => {
     const client = new FakeClient();
-    const result = await getJobEvents(client as unknown as InspireClient, "job-123", 200, "asc");
-    expect(client.calls[1]?.body).toMatchObject({
+    const result = await getJobEvents(
+      client as unknown as InspireClient,
+      "job-123",
+      200,
+      "asc",
+    );
+    expect(client.calls[2]?.body).toMatchObject({
       page_num: 1,
       page_size: 200,
       filter: {
@@ -125,6 +144,23 @@ describe("job logs", () => {
     expect(result.items[0]?.lastTimestampMs).toBe(2000);
   });
 
+  test("merges job and instance events into one chronological timeline", async () => {
+    const client = new FakeClient();
+    const result = await getJobEvents(
+      client as unknown as InspireClient,
+      "job-123",
+      200,
+      "asc",
+      "all",
+    );
+    expect(result.total).toBe(2);
+    expect(result.scope).toBe("all");
+    expect(result.items.map((event) => `${event.objectType}:${event.reason}`)).toEqual([
+      "job:SuccessfulCreatePod",
+      "instance:Scheduled",
+    ]);
+  });
+
   test("only recognizes the exact platform heartbeat line", () => {
     const log = (message: string) => ({
       message,
@@ -137,5 +173,24 @@ describe("job logs", () => {
     expect(isPlatformHeartbeat(log("wait done file (retry after 1 second)..."))).toBe(true);
     expect(isPlatformHeartbeat(log("wait done file failed"))).toBe(false);
     expect(isPlatformHeartbeat(log("user: wait done file (retry after 1 second)..."))).toBe(false);
+  });
+
+  test("only hides reserving events with a successful exit code", () => {
+    const event = (reason: string, message: string) => ({
+      type: "Warning",
+      reason,
+      source: "",
+      message,
+      firstTimestamp: "",
+      firstTimestampMs: null,
+      lastTimestamp: "",
+      lastTimestampMs: null,
+      objectType: "instance",
+      objectId: "job-123-worker-0",
+    });
+    expect(isBenignPlatformEvent(event("PodReservingStart", "Pod start reserving, exitCode:0"))).toBe(true);
+    expect(isBenignPlatformEvent(event("JobReservingStart", "Job start reserving, exitCode: 0"))).toBe(true);
+    expect(isBenignPlatformEvent(event("PodReservingStart", "Pod start reserving, exitCode:2"))).toBe(false);
+    expect(isBenignPlatformEvent(event("Failed", "exitCode:0"))).toBe(false);
   });
 });
