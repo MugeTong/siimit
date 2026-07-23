@@ -1,15 +1,14 @@
-__pycache__/
-*.py[cod]
-*.egg-info/
-.coverage
-.pytest_cache/
-.ruff_cache/
-.venv/
-.playwright-browsers/
+# IDE files
+.vscode/*
+!.vscode/settings.json
+.idea/
+.agents/
+.codex/
+.claude/
+
+# Cache files
+.cache/
+.DS_Store
 node_modules/
 dist/
 build/
-.env
-session.json
-playwright-report/
-test-results/
