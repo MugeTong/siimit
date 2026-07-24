@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { InspireClient } from "../src/platform/client";
-import { cancelJob, getJob, removeJob, validateJobId } from "../src/domain/job-actions";
+import { cancelJob, getJob, removeJob, renderJob, validateJobId } from "../src/domain/job-actions";
 
 class FakeClient {
   calls: Array<{ path: string; body: Record<string, unknown> }> = [];
@@ -77,5 +77,15 @@ describe("job mutations", () => {
     client.postJson = async () => ({ code: 1, message: "train job already deleted" });
     expect(await removeJob(client as unknown as InspireClient, "job-123"))
       .toEqual({ already_absent: true });
+  });
+
+  test("renders a single job without truncating copyable fields", async () => {
+    const job = await getJob(new FakeClient() as unknown as InspireClient, "job-123");
+    job.jobId = "job-3bb7fea2-4758-4c8e-a211-046b59badd6c";
+    job.project = "多模态大模型新架构评测探索与scaling研究项目";
+    const output = renderJob(job);
+    expect(output).toContain(job.jobId);
+    expect(output).toContain(job.project);
+    expect(output).not.toContain("…");
   });
 });

@@ -129,6 +129,7 @@ export function renderJob(job: JobDetail): string {
   return renderTable(
     headers,
     [values],
+    { wide: true },
   );
 }
 

@@ -70,6 +70,10 @@ export const logsCommand: Command = {
       reportHidden(events.length - visible.length, "benign platform event");
     } else {
       const logs = result.items as ContainerLog[];
+      if (logs.length === 0) {
+        console.error("No container logs yet. Use --events to inspect scheduling and image-pull progress.");
+        return;
+      }
       const visible = args.includes("--system") ? logs : logs.filter((log) => !isPlatformHeartbeat(log));
       const showSource = new Set(visible.map((log) => log.podName)).size > 1;
       for (const log of visible) console.log(formatLog(log, showSource));
