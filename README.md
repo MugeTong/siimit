@@ -1,5 +1,6 @@
 # Siimit
 
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Bun](https://img.shields.io/badge/runtime-Bun-black?logo=bun)](https://bun.sh/)
 [![license](https://img.shields.io/github/license/MugeTong/siimit)](LICENSE)
 [![release](https://img.shields.io/github/v/release/MugeTong/siimit?color=green)](https://github.com/MugeTong/siimit/releases)
