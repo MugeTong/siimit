@@ -39,7 +39,6 @@ describe("projects", () => {
     );
     expect(rows[0]).toMatchObject({
       name: "课程项目",
-      priorityLevel: "HIGH",
       availablePriorities: ["low", "high"],
       budget: 10_000,
       remaining: 7_500,

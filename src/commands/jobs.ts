@@ -87,7 +87,10 @@ export const cancelCommand: Command = mutationCommand(
   "cancel",
   "stop a running or queued job",
   "Stop a running or queued training job.",
-  async (jobId) => ({ cancelled: true, job_id: jobId, result: await withClient((client) => cancelJob(client, jobId)) }),
+  async (jobId) => {
+    await withClient((client) => cancelJob(client, jobId));
+    return { cancelled: true, job_id: jobId };
+  },
 );
 
 export const removeCommand: Command = mutationCommand(
@@ -125,7 +128,7 @@ export const submitCommand: Command = {
     "      --shm-size GIB       Shared memory per node",
     "      --exclude-node NAME  Exclude a node; repeat as needed",
     "      --dry-run            Resolve and validate without submitting",
-    "      --json               With --dry-run, print the complete payload",
+    "      --json               Print structured JSON; with --dry-run, include the complete payload",
     "      --yes                Submit without interactive confirmation",
     "  -h, --help               Show this help",
     "",
@@ -176,14 +179,16 @@ export const submitCommand: Command = {
     }
     const submission = await createTrainJob(client, payload);
     const framework = firstFramework(submission.result.framework_config) ?? firstFramework(payload.framework_config);
-    emit({
+    const result = {
       submitted: true,
       job_id: submission.jobId ?? null,
       status: String(submission.result.status ?? "job_queuing").replace(/^job_/, "").toUpperCase(),
       resource: formatFrameworkResource(framework),
       priority: priorityLabel(payload.task_priority),
       task_priority: payload.task_priority,
-    });
+    };
+    if (args.includes("--json")) return emit(result);
+    console.log(renderSubmitResult(result));
   },
 };
 
@@ -191,19 +196,53 @@ function mutationCommand(
   name: "cancel" | "remove",
   short: string,
   description: string,
-  mutate: (jobId: string) => Promise<unknown>,
+  mutate: (jobId: string) => Promise<Record<string, unknown>>,
 ): Command {
   return {
     name,
     short,
     description,
-    usage: `siimit ${name} <job-id>`,
+    usage: `siimit ${name} <job-id> [--json]`,
+    flagOptions: ["--json"],
     maxPositionals: 1,
-    details: "The job ID must be the complete job-... identifier.\n\n  -h, --help   Show this help",
+    details: [
+      "The job ID must be the complete job-... identifier.",
+      "",
+      "Options:",
+      "  --json       Print structured JSON",
+      "  -h, --help   Show this help",
+    ].join("\n"),
     async run(args) {
-      emit(await mutate(validateJobId(args[0])));
+      const result = await mutate(validateJobId(args.find((argument) => !argument.startsWith("-"))));
+      if (args.includes("--json")) return emit(result);
+      console.log(renderMutationResult(name, result));
     },
   };
+}
+
+export function renderSubmitResult(result: {
+  job_id: string | null;
+  status: string;
+  resource: string;
+  priority: "low" | "high";
+  task_priority: unknown;
+}): string {
+  return [
+    `Submitted job ${result.job_id ?? "(platform did not return an ID)"}.`,
+    `Status: ${result.status}`,
+    `Resource: ${result.resource}`,
+    `Priority: ${result.priority} (${String(result.task_priority)})`,
+  ].join("\n");
+}
+
+export function renderMutationResult(
+  name: "cancel" | "remove",
+  result: Record<string, unknown>,
+): string {
+  const jobId = String(result.job_id ?? "");
+  if (name === "cancel") return `Cancelled job ${jobId}.`;
+  if (result.already_absent === true) return `Job ${jobId} was already absent.`;
+  return `Removed job ${jobId}.`;
 }
 
 function dryRunSummary(options: ReturnType<typeof parseSubmitOptions>, payload: Record<string, unknown>): string {

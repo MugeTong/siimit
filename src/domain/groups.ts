@@ -1,19 +1,23 @@
 import type { InspireClient } from "../platform/client";
 import { ConfigurationError } from "../errors";
 import { resolveProject, taskPriorityValue } from "../platform/catalog/projects";
+import {
+  getGroupCapacity,
+  listComputeGroups,
+  listGroupPrices,
+} from "../platform/catalog/groups";
 import { resolveWorkspace } from "../platform/catalog/workspaces";
 import { renderTable } from "../shared/table";
-import { asRecord as record, records as arrayOfRecords } from "../shared/records";
 
 export interface GroupRow {
+  id: string;
   group: string;
   gpuType: string;
   gpuSizes: number[] | null;
   free: number;
   overcommitted: number;
-  highPriority: number;
+  lowPriorityUsed: number;
   used: number;
-  preemptible: number;
   total: number;
 }
 
@@ -26,12 +30,7 @@ export async function listGroups(
   const project = projectName
     ? await resolveProject(client, workspaceId, projectName)
     : undefined;
-  const groupResponse = await client.postJson("/api/v1/logic_compute_groups/list", {
-    page_size: -1,
-    page_num: 1,
-    filter: { workspace_id: workspaceId },
-  });
-  const groups = arrayOfRecords(record(groupResponse.data)?.logic_compute_groups);
+  const groups = await listComputeGroups(client, workspaceId);
   if (!groups.length) {
     throw new ConfigurationError(
       `No compute groups were found in ${workspace}.`,
@@ -41,79 +40,69 @@ export async function listGroups(
   const rows: GroupRow[] = [];
   let priceRequestCount = 0;
   for (const group of groups) {
-    const groupId = String(group.logic_compute_group_id ?? group.id ?? "");
-    if (!groupId) continue;
-    const response = await client.getJson(
-      `/api/v1/compute_resources/logic_compute_groups/${encodeURIComponent(groupId)}`,
-    );
-    const data = record(response.data) ?? {};
-    const resources = record(data.logic_resouces) ?? {};
-    const total = integer(resources.gpu_total);
+    const capacity = await getGroupCapacity(client, group.id);
+    const total = capacity.total;
     if (total <= 0) continue;
-    const used = integer(resources.gpu_used);
-    const lowPriority = integer(resources.gpu_low_priority_used);
+    const used = capacity.used;
+    const lowPriority = capacity.lowPriorityUsed;
     const free = Math.max(0, total - used);
     const overcommitted = Math.max(0, used - total);
-    const gpuStats = arrayOfRecords(data.gpu_type_stats);
-    const gpuInfo = record(gpuStats[0]?.gpu_info);
     let gpuSizes: number[] | null = null;
     if (project) {
       // This pricing endpoint is rate-limited more aggressively than group availability.
       if (priceRequestCount > 0) await delay(750);
       priceRequestCount += 1;
-      const prices = await client.postJson("/api/v1/resource_prices/logic_compute_groups", {
-        workspace_id: workspaceId,
-        schedule_config_type: "SCHEDULE_CONFIG_TYPE_TRAIN",
-        logic_compute_group_id: groupId,
-        project_id: project.id,
-        task_priority: taskPriorityValue(project),
+      const priceRows = await listGroupPrices(client, {
+        workspaceId,
+        groupId: group.id,
+        projectId: project.id,
+        taskPriority: taskPriorityValue(project),
       });
-      const priceData = prices.data;
-      const priceRows = Array.isArray(priceData)
-        ? arrayOfRecords(priceData)
-        : arrayOfRecords(record(priceData)?.lcg_resource_spec_prices ?? record(priceData)?.resource_spec_prices ?? record(priceData)?.list);
       gpuSizes = [...new Set(priceRows.map((item) => integer(item.gpu_count)).filter((count) => count > 0))]
         .sort((left, right) => left - right);
     }
     rows.push({
-      group: String(group.name ?? group.logic_compute_group_name ?? groupId),
-      gpuType: String(gpuInfo?.gpu_type_display ?? gpuInfo?.gpu_product_simple ?? "GPU"),
+      id: group.id,
+      group: group.name,
+      gpuType: capacity.gpuType,
       gpuSizes,
       free,
       overcommitted,
-      highPriority: Math.max(0, total - used + lowPriority),
+      lowPriorityUsed: lowPriority,
       used,
-      preemptible: lowPriority,
       total,
     });
   }
-  return rows.sort((left, right) => right.highPriority - left.highPriority);
+  return rows.sort(
+    (left, right) =>
+      right.free - left.free ||
+      right.total - left.total,
+  );
 }
 
 export function renderGroups(rows: GroupRow[], workspace: string, wide = false): string {
   if (!rows.length) return `No GPU capacity found in ${workspace}.`;
-  const header = ["GPU TYPE", "COMPUTE GROUP", "GPU SIZES", "FREE", "OVERCOMMITTED", "PREEMPTIBLE", "HIGH PRI", "USED", "TOTAL"];
+  const header = ["GPU TYPE", "COMPUTE GROUP", "GPU SIZES", "FREE", "OVERCOMMITTED", "LOW PRI USED", "USED", "TOTAL", "ID"];
   const values = rows.map((row) => [
     row.gpuType,
     row.group,
     row.gpuSizes?.join(",") ?? "-",
     String(row.free),
     String(row.overcommitted),
-    String(row.preemptible),
-    String(row.highPriority),
+    String(row.lowPriorityUsed),
     String(row.used),
     String(row.total),
+    row.id,
   ]);
   const totals = rows.reduce(
     (sum, row) => ({
       free: sum.free + row.free,
       overcommitted: sum.overcommitted + row.overcommitted,
-      preemptible: sum.preemptible + row.preemptible,
-      highPriority: sum.highPriority + row.highPriority,
+      lowPriorityUsed: sum.lowPriorityUsed + row.lowPriorityUsed,
       used: sum.used + row.used,
       total: sum.total + row.total,
     }),
-    { free: 0, overcommitted: 0, preemptible: 0, highPriority: 0, used: 0, total: 0 },
+    { free: 0, overcommitted: 0, lowPriorityUsed: 0, used: 0, total: 0 },
   );
   values.push([
     "TOTAL",
@@ -121,16 +110,16 @@ export function renderGroups(rows: GroupRow[], workspace: string, wide = false):
     "",
     String(totals.free),
     String(totals.overcommitted),
-    String(totals.preemptible),
-    String(totals.highPriority),
+    String(totals.lowPriorityUsed),
     String(totals.used),
     String(totals.total),
+    "",
   ]);
   return [
     `Workspace: ${workspace}`,
     renderTable(header, values, {
-      maxWidths: [22, 32, 11, 6, 13, 11, 8, 8, 7],
-      align: ["left", "left", "right", "right", "right", "right", "right", "right", "right"],
+      maxWidths: [22, 32, 11, 6, 13, 12, 8, 7, 32],
+      align: ["left", "left", "right", "right", "right", "right", "right", "right", "left"],
       wide,
     }),
   ].join("\n");

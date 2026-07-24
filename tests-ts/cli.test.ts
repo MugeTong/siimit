@@ -92,6 +92,12 @@ describe("CLI onboarding", () => {
     }
   });
 
+  test("mutation help offers structured output explicitly", () => {
+    for (const command of ["submit", "cancel", "remove"]) {
+      expect(run(command, "--help").stdout).toContain("--json");
+    }
+  });
+
   test("config defaults to showing the resolved configuration", () => {
     const result = run("config");
     expect(result.exitCode).toBe(0);

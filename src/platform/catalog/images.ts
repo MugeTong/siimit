@@ -7,7 +7,6 @@ export interface PrivateImage {
   version: string;
   address: string;
   status: string;
-  source: "SOURCE_PRIVATE";
 }
 
 export async function listPrivateImages(
@@ -37,7 +36,6 @@ export async function listPrivateImages(
         version,
         address,
         status: String(item.status ?? ""),
-        source: "SOURCE_PRIVATE",
       }];
     })
     .sort((left, right) => `${left.name}:${left.version}`.localeCompare(`${right.name}:${right.version}`));

@@ -55,8 +55,7 @@ siimit groups --project PROJECT --wide
 
 - `FREE`：当前未使用的 GPU
 - `OVERCOMMITTED`：已使用量超过平台报告总量的部分
-- `PREEMPTIBLE`：低优先级任务占用、可能被抢占的 GPU
-- `HIGH PRI`：高优先级任务可能获得的容量
+- `LOW PRI USED`：当前被低优先级任务占用的 GPU
 - `USED` / `TOTAL`：平台报告的使用量和总量
 
 ### 个人镜像
@@ -65,7 +64,7 @@ siimit groups --project PROJECT --wide
 siimit images --wide
 ```
 
-提交时可以向 `--image` 传入 `NAME:VERSION` 或完整地址。Siimit 只从当前用户可见的个人镜像目录中解析镜像。
+`IMAGE` 列是可以直接传给 `--image` 的 `NAME:VERSION`。也可以使用完整 `ADDRESS`。Siimit 只从当前用户可见的个人镜像目录中解析镜像。
 
 ## 提交任务
 
@@ -101,7 +100,7 @@ siimit submit \
 - `--nodes NUMBER`：节点数，默认读取配置中的 `nodes`
 - `--shm-size GIB`：每个节点的共享内存
 - `--exclude-node NAME`：排除节点，可以重复指定
-- `--json`：配合 `--dry-run` 输出完整平台 payload
+- `--json`：输出结构化结果；配合 `--dry-run` 时包含完整平台 payload
 - `--yes`：跳过正式提交前的交互确认
 
 单节点总 GPU 数等于 `--gpus`；多节点总 GPU 数等于 `--gpus × --nodes`。
@@ -125,6 +124,8 @@ siimit logs JOB_ID --events
 siimit cancel JOB_ID
 siimit remove JOB_ID
 ```
+
+这些命令默认输出便于阅读的文本。自动化调用 `submit`、`cancel` 或 `remove` 时增加 `--json` 获取稳定的结构化结果。
 
 查询选项：
 

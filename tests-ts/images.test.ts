@@ -36,12 +36,10 @@ describe("private images", () => {
   test("lists the same normalized private catalogue used by submission", async () => {
     const images = await listVisibleImages(new FakeClient() as unknown as InspireClient, DEFAULT_APP_CONFIG);
     expect(images).toEqual([{
-      name: "ubuntu25.04-product",
-      version: "1.0.1",
+      image: "ubuntu25.04-product:1.0.1",
       address: "registry.internal/ubuntu25.04-product:1.0.1",
       status: "READY",
-      source: "SOURCE_PRIVATE",
     }]);
-    expect(renderImages(images)).toContain("ubuntu25.04-product");
+    expect(renderImages(images)).toContain("ubuntu25.04-product:1.0.1");
   });
 });

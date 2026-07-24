@@ -1,6 +1,7 @@
 import { ApiError, ConfigurationError } from "../../errors";
-import { asRecord, records } from "../../shared/records";
+import { asRecord } from "../../shared/records";
 import type { InspireClient } from "../client";
+import { listComputeGroups, listGroupPrices } from "./groups";
 
 export interface ResolvedQuota {
   gpu: number;
@@ -20,26 +21,15 @@ export async function resolveQuota(
   projectId: string,
   taskPriority: number,
 ): Promise<ResolvedQuota> {
-  const groupResponse = await client.postJson("/api/v1/logic_compute_groups/list", {
-    page_size: -1,
-    page_num: 1,
-    filter: { workspace_id: workspaceId },
-  });
-  const groups = records(asRecord(groupResponse.data)?.logic_compute_groups);
-  const group = groups.find((item) => groupName(item) === requestedGroup || groupId(item) === requestedGroup);
+  const groups = await listComputeGroups(client, workspaceId);
+  const group = groups.find((item) => item.name === requestedGroup || item.id === requestedGroup);
   if (!group) throw new ConfigurationError(`No compute group exactly matches ${JSON.stringify(requestedGroup)}.`);
-  const selectedGroupId = groupId(group);
-  const response = await client.postJson("/api/v1/resource_prices/logic_compute_groups", {
-    workspace_id: workspaceId,
-    schedule_config_type: "SCHEDULE_CONFIG_TYPE_TRAIN",
-    logic_compute_group_id: selectedGroupId,
-    project_id: projectId,
-    task_priority: taskPriority,
+  const rows = await listGroupPrices(client, {
+    workspaceId,
+    groupId: group.id,
+    projectId,
+    taskPriority,
   });
-  const data = response.data;
-  const rows = Array.isArray(data)
-    ? records(data)
-    : records(asRecord(data)?.lcg_resource_spec_prices ?? asRecord(data)?.resource_spec_prices ?? asRecord(data)?.list);
   const price = rows
     .filter((item) => number(item.gpu_count) === gpuCount)
     .sort((left, right) => number(right.cpu_count) - number(left.cpu_count) || memory(right) - memory(left))[0];
@@ -54,18 +44,10 @@ export async function resolveQuota(
     cpu: number(price.cpu_count),
     memoryGiB: memory(price),
     quotaId,
-    groupId: selectedGroupId,
+    groupId: group.id,
     ...(gpuType ? { gpuType } : {}),
     cpuType: String(cpuInfo?.cpu_type ?? ""),
   };
-}
-
-function groupId(item: Record<string, unknown>): string {
-  return String(item.logic_compute_group_id ?? item.id ?? "");
-}
-
-function groupName(item: Record<string, unknown>): string {
-  return String(item.name ?? item.logic_compute_group_name ?? "");
 }
 
 function memory(item: Record<string, unknown>): number {

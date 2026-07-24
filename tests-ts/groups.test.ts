@@ -55,27 +55,31 @@ class FakeClient {
 }
 
 describe("GPU groups", () => {
-  test("calculates live and high-priority availability", async () => {
+  test("reports free and low-priority GPU usage", async () => {
     const rows = await listGroups(
       new FakeClient() as unknown as InspireClient,
       "分布式训练空间",
       "课程项目",
     );
     expect(rows).toEqual([{
+      id: "lcg-1",
       group: "训练区-H200",
       gpuType: "H200",
       gpuSizes: [2, 4, 8],
       free: 6,
       overcommitted: 0,
-      highPriority: 8,
+      lowPriorityUsed: 2,
       used: 10,
-      preemptible: 2,
       total: 16,
     }]);
-    expect(renderGroups(rows, "分布式训练空间")).toContain("Workspace: 分布式训练空间");
+    const output = renderGroups(rows, "分布式训练空间");
+    expect(output).toContain("Workspace: 分布式训练空间");
+    expect(output).toContain("LOW PRI USED");
+    expect(output).not.toContain("HIGH PRI");
+    expect(output).toContain("lcg-1");
   });
 
-  test("separates overcommit from reclaimable high-priority capacity", async () => {
+  test("separates overcommit from low-priority usage", async () => {
     const rows = await listGroups(
       new FakeClient(20, 8) as unknown as InspireClient,
       "分布式训练空间",
@@ -84,8 +88,8 @@ describe("GPU groups", () => {
     expect(rows[0]).toMatchObject({
       free: 0,
       overcommitted: 4,
-      preemptible: 8,
-      highPriority: 4,
+      lowPriorityUsed: 8,
     });
   });
+
 });
