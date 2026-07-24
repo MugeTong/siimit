@@ -1,5 +1,10 @@
 # Siimit
 
+[![Bun](https://img.shields.io/badge/runtime-Bun-black?logo=bun)](https://bun.sh/)
+[![license](https://img.shields.io/github/license/MugeTong/siimit)](LICENSE)
+[![release](https://img.shields.io/github/v/release/MugeTong/siimit?color=green)](https://github.com/MugeTong/siimit/releases)
+![downloads](https://img.shields.io/github/downloads/MugeTong/siimit/total)
+
 Siimit 是面向 Inspire 分布式训练空间的 GPU 任务提交工具，支持资源查询、任务提交、状态管理和容器日志。
 
 ## 安装
