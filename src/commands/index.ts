@@ -1,5 +1,6 @@
 import stringWidth from "string-width";
 import packageInfo from "../../package.json";
+import { SiimitError } from "../errors";
 import type { Command } from "./command";
 import { commandHelp } from "./command";
 import { loginCommand, logoutCommand } from "./auth";
@@ -38,10 +39,15 @@ const helpCommand: Command = {
     }
     if (args.length > 0) {
       const command = commands[args[0]!];
-      console.log(command ? commandHelp(command) : `Unknown command: ${args[0]}`);
+      if (!command) {
+        throw new SiimitError(
+          `Unknown command: ${args[0]}. Run 'siimit --help' to list available commands.`,
+        );
+      }
+      console.log(commandHelp(command));
       return;
     }
-    console.log("Siimit is a CLI for logging in and submitting training jobs.\n");
+    console.log("Siimit is a CLI for discovering GPU resources and managing training jobs.\n");
     console.log("Each invocation runs one command and exits; Siimit does not start a background service.\n");
     console.log("Usage: siimit <command> [options]\n");
     console.log("Available commands:");

@@ -71,6 +71,10 @@ export const logsCommand: Command = {
     }
     if (result.kind === "events") {
       const events = result.items as JobEvent[];
+      if (events.length === 0) {
+        console.error("No scheduling events yet.");
+        return;
+      }
       const visible = args.includes("--system")
         ? events
         : events.filter((event) => !isBenignPlatformEvent(event));

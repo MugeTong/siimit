@@ -6,6 +6,7 @@ export interface Command {
   details?: string;
   valueOptions?: readonly string[];
   flagOptions?: readonly string[];
+  conflicts?: readonly (readonly string[])[];
   maxPositionals?: number;
   run(args: string[]): void | Promise<void>;
 }
@@ -29,6 +30,12 @@ export function execute(command: Command, args: string[]): void | Promise<void> 
 }
 
 function validateArguments(command: Command, args: string[]): void {
+  for (const group of command.conflicts ?? []) {
+    const selected = group.filter((option) => args.includes(option));
+    if (selected.length > 1) {
+      throw new Error(`${selected.join(" and ")} cannot be used together.`);
+    }
+  }
   let positionals = 0;
   for (let index = 0; index < args.length; index++) {
     const argument = args[index]!;

@@ -59,6 +59,53 @@ describe("CLI onboarding", () => {
     expect(result.stderr).toContain("Unknown option for projects: --jsoon");
   });
 
+  test("unknown help topics fail with a next step", () => {
+    const result = run("help", "unknown");
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("Unknown command: unknown");
+    expect(result.stderr).toContain("siimit --help");
+  });
+
+  test("query options are validated before contacting the platform", () => {
+    const invalidLimit = run("ls", "--limit", "0");
+    expect(invalidLimit.exitCode).toBe(1);
+    expect(invalidLimit.stderr).toContain("--limit must be a positive integer");
+    expect(invalidLimit.stderr).not.toContain("Cannot connect");
+
+    const conflictingGet = run("get", "job-123", "--json", "--raw");
+    expect(conflictingGet.exitCode).toBe(1);
+    expect(conflictingGet.stderr).toContain("--json and --raw cannot be used together");
+
+    const conflictingTable = run("projects", "--wide", "--json");
+    expect(conflictingTable.exitCode).toBe(1);
+    expect(conflictingTable.stderr).toContain("--wide and --json cannot be used together");
+  });
+
+  test("submit rejects non-positive shared memory before platform access", () => {
+    const result = run(
+      "submit",
+      "--name", "test",
+      "--command", "true",
+      "--project", "project",
+      "--group", "group",
+      "--gpus", "1",
+      "--image", "image",
+      "--max-time", "1",
+      "--shm-size", "0",
+      "--dry-run",
+    );
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("--shm-size must be greater than zero");
+    expect(result.stderr).not.toContain("Cannot connect");
+  });
+
+  test("config reports an invalid action with help", () => {
+    const result = run("config", "unknown");
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("Unknown config action: unknown");
+    expect(result.stderr).toContain("siimit config --help");
+  });
+
   test("submit help explains discovery, safety, and priority defaults", () => {
     const result = run("submit", "--help");
     expect(result.stdout).toContain("siimit projects --wide");

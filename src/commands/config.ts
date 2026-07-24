@@ -12,6 +12,7 @@ export const configCommand: Command = {
     "Actions:",
     "  path   Print the config.json path",
     "  show   Print the resolved workspace, node count, and framework",
+    "  -h, --help   Show this help",
     "",
     "The configuration normally lives at ~/.config/siimit/config.json.",
   ].join("\n"),
@@ -20,6 +21,8 @@ export const configCommand: Command = {
     if (args[0] === undefined || args[0] === "show") {
       return console.log(JSON.stringify(await loadAppConfig(), null, 2));
     }
-    throw new SiimitError("Usage: siimit config [path|show]");
+    throw new SiimitError(
+      `Unknown config action: ${args[0]}. Run 'siimit config --help' for usage.`,
+    );
   },
 };

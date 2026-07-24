@@ -13,6 +13,7 @@ export const groupsCommand: Command = {
   usage: "siimit groups [--project PROJECT] [--wide | --json]",
   valueOptions: ["--project", "-p"],
   flagOptions: ["--wide", "--json"],
+  conflicts: [["--wide", "--json"]],
   details: [
     "Options:",
     "  -p, --project PROJECT   Show GPU sizes allowed for this project",
@@ -40,13 +41,14 @@ export const imagesCommand: Command = {
   description: "List personal private images visible in the configured workspace.",
   usage: "siimit images [--wide | --json]",
   flagOptions: ["--wide", "--json"],
+  conflicts: [["--wide", "--json"]],
   details: [
     "Options:",
     "  --wide       Print complete, copyable image addresses",
     "  --json       Print structured JSON",
     "  -h, --help   Show this help",
     "",
-    "Use the NAME:VERSION value or full ADDRESS as --image when submitting.",
+    "Use the IMAGE value or full ADDRESS as --image when submitting.",
   ].join("\n"),
   async run(args) {
     const config = await loadAppConfig();
@@ -63,6 +65,7 @@ export const projectsCommand: Command = {
   description: "List projects, available priorities, and point balances.",
   usage: "siimit projects [--wide | --json]",
   flagOptions: ["--wide", "--json"],
+  conflicts: [["--wide", "--json"]],
   details: [
     "Options:",
     "  --wide       Print complete, copyable project names and IDs",

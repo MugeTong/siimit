@@ -7,7 +7,7 @@ import { AuthenticationError, SiimitError } from "../errors";
 import { InspireClient } from "../platform/client";
 import { createTrainJob } from "../platform/train";
 import { firstFramework, formatFrameworkResource } from "../shared/resource";
-import { numericOption, option, parseSubmitOptions } from "./args";
+import { option, parseSubmitOptions, positiveIntegerOption } from "./args";
 import type { Command } from "./command";
 import { loginWithSavedCredentials, sessionOrLogin, withClient } from "./runtime";
 import { confirm } from "./prompts";
@@ -19,6 +19,7 @@ export const listCommand: Command = {
   usage: "siimit ls [--workspace NAME] [--status STATUS] [--keyword TEXT] [--limit NUMBER] [--wide | --json]",
   valueOptions: ["--workspace", "--status", "--keyword", "--limit"],
   flagOptions: ["--wide", "--json"],
+  conflicts: [["--wide", "--json"]],
   details: [
     "Options:",
     "  --workspace NAME   Restrict results to one exact workspace name or ws-... ID",
@@ -34,7 +35,7 @@ export const listCommand: Command = {
       ...(option(args, "--workspace") ? { workspace: option(args, "--workspace")! } : {}),
       ...(option(args, "--status") ? { status: option(args, "--status")! } : {}),
       ...(option(args, "--keyword") ? { keyword: option(args, "--keyword")! } : {}),
-      limit: numericOption(args, "--limit", 20),
+      limit: positiveIntegerOption(args, "--limit", 20),
     };
     const rows = await withClient((client) => listCurrentUserJobs(client, options));
     console.log(args.includes("--json")
@@ -49,6 +50,7 @@ export const getCommand: Command = {
   description: "Show normalized task state, or the complete platform response with --raw.",
   usage: "siimit get <job-id> [--json | --raw]",
   flagOptions: ["--json", "--raw"],
+  conflicts: [["--json", "--raw"]],
   maxPositionals: 1,
   details: [
     "Options:",
@@ -59,7 +61,7 @@ export const getCommand: Command = {
     "Use --raw only for debugging; it may include verbose platform metadata.",
   ].join("\n"),
   async run(args) {
-    const job = await withClient((client) => getJob(client, validateJobId(args[0])));
+    const job = await withClient((client) => getJob(client, validateJobId(args.find((argument) => !argument.startsWith("-")))));
     if (args.includes("--raw")) return emit(job.raw);
     if (!args.includes("--json")) return console.log(renderJob(job));
     emit({
@@ -85,11 +87,11 @@ export const getCommand: Command = {
 
 export const cancelCommand: Command = mutationCommand(
   "cancel",
-  "stop a running or queued job",
-  "Stop a running or queued training job.",
+  "request cancellation of a running or queued job",
+  "Request cancellation of a running or queued training job.",
   async (jobId) => {
     await withClient((client) => cancelJob(client, jobId));
-    return { cancelled: true, job_id: jobId };
+    return { cancel_requested: true, job_id: jobId };
   },
 );
 
@@ -125,7 +127,7 @@ export const submitCommand: Command = {
     "Optional:",
     "      --priority LEVEL     low or high; defaults to highest available",
     "      --nodes NUMBER       Node count (default from config: 1)",
-    "      --shm-size GIB       Shared memory per node",
+    "      --shm-size GIB       Shared memory per node; must be greater than zero",
     "      --exclude-node NAME  Exclude a node; repeat as needed",
     "      --dry-run            Resolve and validate without submitting",
     "      --json               Print structured JSON; with --dry-run, include the complete payload",
@@ -240,7 +242,7 @@ export function renderMutationResult(
   result: Record<string, unknown>,
 ): string {
   const jobId = String(result.job_id ?? "");
-  if (name === "cancel") return `Cancelled job ${jobId}.`;
+  if (name === "cancel") return `Cancellation requested for job ${jobId}.`;
   if (result.already_absent === true) return `Job ${jobId} was already absent.`;
   return `Removed job ${jobId}.`;
 }

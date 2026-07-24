@@ -36,7 +36,7 @@ export function parseSubmitOptions(args: string[]): SubmitOptions {
     image: requiredOption(args, "--image"),
     maxTimeHours: requiredPositiveNumber(args, "--max-time"),
     ...optionalPriority(args),
-    ...optionalNumber(args, "--shm-size", "shmSizeGiB"),
+    ...optionalPositiveNumber(args, "--shm-size", "shmSizeGiB"),
     excludeNodes: repeatedOption(args, "--exclude-node"),
   };
 }
@@ -70,11 +70,13 @@ function optionalPriority(args: string[]): { priority?: "low" | "high" } {
   return { priority };
 }
 
-export function numericOption(args: string[], name: string, fallback: number): number {
+export function positiveIntegerOption(args: string[], name: string, fallback: number): number {
   const raw = option(args, name);
   if (raw === undefined) return fallback;
   const value = Number(raw);
-  if (!Number.isFinite(value)) throw new SiimitError(`${name} must be a number.`);
+  if (!Number.isSafeInteger(value) || value < 1) {
+    throw new SiimitError(`${name} must be a positive integer.`);
+  }
   return value;
 }
 
@@ -96,11 +98,13 @@ function requiredPositiveNumber(args: string[], name: string): number {
   return value;
 }
 
-function optionalNumber<K extends string>(args: string[], name: string, key: K): { [P in K]?: number } {
+function optionalPositiveNumber<K extends string>(args: string[], name: string, key: K): { [P in K]?: number } {
   const raw = option(args, name);
   if (raw === undefined) return {};
   const value = Number(raw);
-  if (!Number.isFinite(value)) throw new SiimitError(`${name} must be a number.`);
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new SiimitError(`${name} must be greater than zero.`);
+  }
   return { [key]: value } as { [P in K]?: number };
 }
 

@@ -23,9 +23,9 @@ describe("mutation command output", () => {
 
   test("renders cancel and idempotent remove results", () => {
     expect(renderMutationResult("cancel", {
-      cancelled: true,
+      cancel_requested: true,
       job_id: "job-123",
-    })).toBe("Cancelled job job-123.");
+    })).toBe("Cancellation requested for job job-123.");
     expect(renderMutationResult("remove", {
       removed: true,
       already_absent: true,

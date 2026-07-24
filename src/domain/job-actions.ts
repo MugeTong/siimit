@@ -29,7 +29,9 @@ export interface JobDetail {
 export function validateJobId(value: string | undefined): string {
   const jobId = String(value ?? "").trim();
   if (!jobId.startsWith("job-") || jobId.length <= 4) {
-    throw new ConfigurationError("A complete job-... ID is required.");
+    throw new ConfigurationError(
+      "A complete job-... ID is required. Run 'siimit ls' to find a job ID.",
+    );
   }
   return jobId;
 }
