@@ -1,9 +1,10 @@
 import type { InspireClient } from "../platform/client";
 import { ApiError, ConfigurationError } from "../errors";
 import { listWorkspaces, resolveWorkspace } from "../platform/catalog/workspaces";
+import { listTrainJobs } from "../platform/train";
 import { renderTable } from "../shared/table";
 import { displayTime, normalizeTime } from "../shared/time";
-import { asRecord as record, records as arrayOfRecords } from "../shared/records";
+import { records as arrayOfRecords } from "../shared/records";
 import { formatFrameworkResource } from "../shared/resource";
 
 export interface ListOptions {
@@ -57,13 +58,7 @@ export async function listCurrentUserJobs(
     };
     if (options.keyword) body.keyword = options.keyword;
     if (options.status) body.status = normalizeStatus(options.status);
-    const response = await client.postJson("/api/v2/train?Action=ListJobs", body);
-    const metadata = record(response.ResponseMetadata);
-    if (record(metadata?.Error)) {
-      const error = record(metadata?.Error)!;
-      throw new ApiError(`ListJobs failed: ${String(error.Code ?? "Error")}: ${String(error.Message ?? "unknown error")}`);
-    }
-    const result = record(response.Result) ?? record(response.data) ?? {};
+    const result = await listTrainJobs(client, body);
     for (const job of arrayOfRecords(result.jobs)) {
       const framework = arrayOfRecords(job.framework_config)[0] ?? {};
       const created = normalizeTime(job.created_at);

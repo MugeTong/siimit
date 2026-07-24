@@ -7,6 +7,7 @@ import {
   isPlatformHeartbeat,
 } from "../src/domain/job-logs";
 import type { InspireClient } from "../src/platform/client";
+import { InstanceNotReadyError } from "../src/platform/train";
 
 class FakeClient {
   calls: Array<{ path: string; body: Record<string, unknown> }> = [];
@@ -117,6 +118,34 @@ describe("job logs", () => {
     const result = await getContainerLogs(client as unknown as InspireClient, "job-123", undefined, "asc");
     expect(result.items.map((item) => item.message)).toEqual(["line-0", "line-1", "line-2", "line-3"]);
     expect(client.calls[3]?.body.search_after).toEqual(["time-1", "log-1"]);
+  });
+
+  test("explains when the platform has not registered a container instance yet", async () => {
+    class MissingInstanceClient extends FakeClient {
+      override async postJson(path: string, body: Record<string, unknown>): Promise<Record<string, unknown>> {
+        if (!path.includes("Action=GetJobLog")) return super.postJson(path, body);
+        return {
+          ResponseMetadata: {
+            Error: {
+              Code: "InternalError",
+              Message: "Invalid instance names, the job ids length of instances except 1, but got 0.",
+            },
+          },
+        };
+      }
+    }
+
+    try {
+      await getContainerLogs(
+        new MissingInstanceClient() as unknown as InspireClient,
+        "job-123",
+        200,
+        "asc",
+      );
+      throw new Error("Expected getContainerLogs to fail");
+    } catch (error) {
+      expect(error).toBeInstanceOf(InstanceNotReadyError);
+    }
   });
 
   test("uses second timestamps for job events", async () => {

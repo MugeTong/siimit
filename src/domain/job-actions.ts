@@ -1,5 +1,6 @@
 import type { InspireClient } from "../platform/client";
-import { ApiError, ConfigurationError } from "../errors";
+import { ConfigurationError } from "../errors";
+import { getTrainJob, removeTrainJob, stopTrainJob } from "../platform/train";
 import { renderTable } from "../shared/table";
 import { displayTime, normalizeTime } from "../shared/time";
 import { asRecord as record, records as arrayOfRecords } from "../shared/records";
@@ -37,53 +38,18 @@ export async function cancelJob(
   client: InspireClient,
   jobId: string,
 ): Promise<Record<string, unknown>> {
-  const response = await client.postJson(
-    "/api/v2/train?Action=StopJob",
-    { job_id: jobId },
-  );
-  const metadata = record(response.ResponseMetadata);
-  const error = record(metadata?.Error);
-  if (error) {
-    throw new ApiError(
-      `StopJob failed: ${String(error.Code ?? "Error")}: ${String(error.Message ?? "unknown error")}`,
-    );
-  }
-  return record(response.Result) ?? record(response.data) ?? {};
+  return stopTrainJob(client, jobId);
 }
 
 export async function removeJob(
   client: InspireClient,
   jobId: string,
 ): Promise<Record<string, unknown>> {
-  const response = await client.postJson(
-    "/api/v1/train_job/delete",
-    { job_id: jobId },
-  );
-  if (response.code !== undefined && Number(response.code) !== 0) {
-    const message = String(response.message ?? response.code);
-    if (/already deleted|already absent|not found/i.test(message)) {
-      return { already_absent: true };
-    }
-    throw new ApiError(
-      `Delete job failed: ${message}.`,
-    );
-  }
-  return record(response.data) ?? {};
+  return removeTrainJob(client, jobId);
 }
 
 export async function getJob(client: InspireClient, jobId: string): Promise<JobDetail> {
-  const response = await client.postJson(
-    "/api/v2/train?Action=GetJob",
-    { job_id: jobId },
-  );
-  const metadata = record(response.ResponseMetadata);
-  const error = record(metadata?.Error);
-  if (error) {
-    throw new ApiError(
-      `GetJob failed: ${String(error.Code ?? "Error")}: ${String(error.Message ?? "unknown error")}`,
-    );
-  }
-  const raw = record(response.Result) ?? record(response.data) ?? {};
+  const raw = await getTrainJob(client, jobId);
   const framework = arrayOfRecords(raw.framework_config)[0] ?? {};
   const created = normalizeTime(raw.created_at);
   const submittedPriority = integer(raw.task_priority);

@@ -5,6 +5,7 @@ import { listCurrentUserJobs, renderJobs } from "../domain/jobs";
 import { buildSubmissionPayload } from "../domain/submission";
 import { AuthenticationError, SiimitError } from "../errors";
 import { InspireClient } from "../platform/client";
+import { createTrainJob } from "../platform/train";
 import { firstFramework, formatFrameworkResource } from "../shared/resource";
 import { numericOption, option, parseSubmitOptions } from "./args";
 import type { Command } from "./command";
@@ -173,7 +174,7 @@ export const submitCommand: Command = {
       }
       if (!await confirm("Submit now?")) throw new SiimitError("Submission cancelled.");
     }
-    const submission = await client.submit(payload);
+    const submission = await createTrainJob(client, payload);
     const framework = firstFramework(submission.result.framework_config) ?? firstFramework(payload.framework_config);
     emit({
       submitted: true,

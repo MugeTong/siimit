@@ -1,5 +1,10 @@
 import { ApiError } from "../errors";
 import type { InspireClient } from "../platform/client";
+import {
+  getTrainJobLogPage,
+  listTrainJobEvents,
+  listTrainJobInstances,
+} from "../platform/train";
 import { asRecord as record, records } from "../shared/records";
 import { normalizeTime } from "../shared/time";
 import { getJob } from "./job-actions";
@@ -51,7 +56,7 @@ export async function getContainerLogs(
 
   while (limit === undefined || items.length < limit) {
     const pageSize = Math.min(1000, limit === undefined ? 1000 : limit - items.length);
-    const response = await client.postJson("/api/v2/train?Action=GetJobLog", {
+    const result = await getTrainJobLogPage(client, {
       page_size: pageSize,
       filter: {
         podNames: range.podNames,
@@ -64,7 +69,6 @@ export async function getContainerLogs(
       ],
       ...(searchAfter ? { search_after: searchAfter } : {}),
     });
-    const result = apiResult(response, "GetJobLog");
     total = number(result.total);
     const page = records(result.logs);
     items.push(...page.map(containerLog));
@@ -156,16 +160,11 @@ async function jobLogRange(
   const startMs = number(job.raw.created_at ?? timeline.created);
   const endMs = number(job.raw.finished_at ?? timeline.finished) || Date.now();
   if (startMs <= 0) throw new ApiError("GetJob did not provide a valid creation time for log lookup.");
-  const instanceResponse = await client.postJson("/api/v2/train?Action=ListJobInstances", {
-    page_num: 1,
-    page_size: Math.max(instanceCount, 100),
-    job_id: jobId,
-  });
-  const instanceError = record(record(instanceResponse.ResponseMetadata)?.Error);
-  const instanceResult = instanceError
-    ? {}
-    : record(instanceResponse.Result) ?? record(instanceResponse.data) ?? {};
-  const discoveredNames = records(instanceResult.items)
+  const discoveredNames = (await listTrainJobInstances(
+    client,
+    jobId,
+    Math.max(instanceCount, 100),
+  ))
     .map((item) => String(item.name ?? "").trim())
     .filter(Boolean);
   return {
@@ -175,16 +174,6 @@ async function jobLogRange(
     startMs,
     endMs: Math.max(startMs, endMs),
   };
-}
-
-function apiResult(response: Record<string, unknown>, action: string): Record<string, unknown> {
-  const error = record(record(response.ResponseMetadata)?.Error);
-  if (error) {
-    throw new ApiError(
-      `${action} failed: ${String(error.Code ?? "Error")}: ${String(error.Message ?? "unknown error")}`,
-    );
-  }
-  return record(response.Result) ?? record(response.data) ?? {};
 }
 
 function sortName(order: LogOrder): "ascend" | "descend" {
@@ -233,8 +222,7 @@ async function requestJobEvents(
   client: InspireClient,
   body: Record<string, unknown>,
 ): Promise<{ total: number; items: JobEvent[] }> {
-  const response = await client.postJson("/api/v2/train?Action=ListJobEvents", body);
-  const result = apiResult(response, "ListJobEvents");
+  const result = await listTrainJobEvents(client, body);
   return {
     total: number(result.total),
     items: records(result.events).map(jobEvent),

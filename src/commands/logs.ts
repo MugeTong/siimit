@@ -1,4 +1,5 @@
 import { SiimitError } from "../errors";
+import { InstanceNotReadyError } from "../platform/train";
 import {
   getContainerLogs,
   getJobEvents,
@@ -53,9 +54,17 @@ export const logsCommand: Command = {
     const limit = all ? undefined : parseLimit(requestedLimit);
     const order = parseOrder(option(args, "--order"));
     const scope = parseScope(option(args, "--scope"));
-    const result = args.includes("--events")
-      ? await withClient((client) => getJobEvents(client, jobId, limit ?? 200, order, scope))
-      : await withClient((client) => getContainerLogs(client, jobId, limit, order));
+    let result;
+    try {
+      result = args.includes("--events")
+        ? await withClient((client) => getJobEvents(client, jobId, limit ?? 200, order, scope))
+        : await withClient((client) => getContainerLogs(client, jobId, limit, order));
+    } catch (error) {
+      if (!(error instanceof InstanceNotReadyError)) throw error;
+      throw new SiimitError(
+        "No container instance is available yet. Use --events to inspect scheduling progress.",
+      );
+    }
     if (args.includes("--json")) {
       console.log(JSON.stringify(result, null, 2));
       return;
