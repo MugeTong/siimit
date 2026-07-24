@@ -1,6 +1,6 @@
 {
   "name": "Siimit",
-  "version": "0.17.1",
+  "version": "0.17.2",
   "description": "A CLI for logging and submitting training jobs",
   "type": "module",
   "author": {

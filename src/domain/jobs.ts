@@ -11,7 +11,7 @@ export interface ListOptions {
   workspace?: string;
   status?: string;
   keyword?: string;
-  limit: number;
+  limit?: number;
 }
 
 export interface JobRow {
@@ -50,33 +50,49 @@ export async function listCurrentUserJobs(
   const names = new Map(available.map((item) => [item.id, item.name]));
   const rows: JobRow[] = [];
   for (const workspaceId of selected) {
-    const body: Record<string, unknown> = {
-      workspace_id: workspaceId,
-      page_num: 1,
-      page_size: Math.min(Math.max(options.limit, 1), 100),
-      created_by: userId,
-    };
-    if (options.keyword) body.keyword = options.keyword;
-    if (options.status) body.status = normalizeStatus(options.status);
-    const result = await listTrainJobs(client, body);
-    for (const job of arrayOfRecords(result.jobs)) {
-      const framework = arrayOfRecords(job.framework_config)[0] ?? {};
-      const created = normalizeTime(job.created_at);
-      rows.push({
-        jobId: String(job.job_id ?? job.id ?? ""),
-        name: String(job.name ?? ""),
-        status: displayStatus(String(job.status ?? "")),
-        workspace: names.get(workspaceId) ?? workspaceId,
-        project: String(job.project_name ?? job.project_id ?? ""),
-        gpu: formatFrameworkResource(framework),
-        createdAt: created.iso,
-        createdAtMs: created.milliseconds,
-      });
+    let page = 1;
+    let fetched = 0;
+    const pageSize = options.limit === undefined
+      ? 100
+      : Math.min(100, options.limit);
+    while (options.limit === undefined || fetched < options.limit) {
+      const body: Record<string, unknown> = {
+        workspace_id: workspaceId,
+        page_num: page,
+        page_size: pageSize,
+        created_by: userId,
+      };
+      if (options.keyword) body.keyword = options.keyword;
+      if (options.status) body.status = normalizeStatus(options.status);
+      const result = await listTrainJobs(client, body);
+      const jobs = arrayOfRecords(result.jobs);
+      for (const job of jobs) {
+        const framework = arrayOfRecords(job.framework_config)[0] ?? {};
+        const created = normalizeTime(job.created_at);
+        rows.push({
+          jobId: String(job.job_id ?? job.id ?? ""),
+          name: String(job.name ?? ""),
+          status: displayStatus(String(job.status ?? "")),
+          workspace: names.get(workspaceId) ?? workspaceId,
+          project: String(job.project_name ?? job.project_id ?? ""),
+          gpu: formatFrameworkResource(framework),
+          createdAt: created.iso,
+          createdAtMs: created.milliseconds,
+        });
+      }
+      fetched += jobs.length;
+      const total = optionalNonNegativeInteger(result.total ?? result.total_count);
+      if (
+        jobs.length === 0 ||
+        jobs.length < pageSize ||
+        (total !== null && fetched >= total)
+      ) break;
+      page += 1;
     }
   }
-  return rows
-    .sort((left, right) => (right.createdAtMs ?? 0) - (left.createdAtMs ?? 0))
-    .slice(0, options.limit);
+  const sorted = rows
+    .sort((left, right) => (right.createdAtMs ?? 0) - (left.createdAtMs ?? 0));
+  return options.limit === undefined ? sorted : sorted.slice(0, options.limit);
 }
 
 export function renderJobs(rows: JobRow[], wide = false): string {
@@ -100,4 +116,9 @@ function normalizeStatus(value: string): string {
 
 function displayStatus(value: string): string {
   return value.replace(/^job_/, "").toUpperCase();
+}
+
+function optionalNonNegativeInteger(value: unknown): number | null {
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null;
 }

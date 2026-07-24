@@ -16,16 +16,17 @@ export const listCommand: Command = {
   name: "ls",
   short: "list training jobs",
   description: "List the current user's training jobs across accessible workspaces.",
-  usage: "siimit ls [--workspace NAME] [--status STATUS] [--keyword TEXT] [--limit NUMBER] [--wide | --json]",
+  usage: "siimit ls [--workspace NAME] [--status STATUS] [--keyword TEXT] [--limit NUMBER | --all] [--wide | --json]",
   valueOptions: ["--workspace", "--status", "--keyword", "--limit"],
-  flagOptions: ["--wide", "--json"],
-  conflicts: [["--wide", "--json"]],
+  flagOptions: ["--all", "--wide", "--json"],
+  conflicts: [["--limit", "--all"], ["--wide", "--json"]],
   details: [
     "Options:",
     "  --workspace NAME   Restrict results to one exact workspace name or ws-... ID",
     "  --status STATUS    RUNNING, QUEUING, SUCCEEDED, FAILED, CANCELLED, or API value",
     "  --keyword TEXT     Server-side name keyword filter",
-    "  --limit NUMBER     Maximum rows after merging workspaces (default: 20)",
+    "  --limit NUMBER     Maximum rows after merging workspaces; automatically paginated (default: 20)",
+    "  --all              Load all matching jobs across accessible workspaces",
     "  --wide             Do not truncate names or IDs",
     "  --json             Print structured JSON",
     "  -h, --help         Show this help",
@@ -35,7 +36,9 @@ export const listCommand: Command = {
       ...(option(args, "--workspace") ? { workspace: option(args, "--workspace")! } : {}),
       ...(option(args, "--status") ? { status: option(args, "--status")! } : {}),
       ...(option(args, "--keyword") ? { keyword: option(args, "--keyword")! } : {}),
-      limit: positiveIntegerOption(args, "--limit", 20),
+      ...(args.includes("--all")
+        ? {}
+        : { limit: positiveIntegerOption(args, "--limit", 20) }),
     };
     const rows = await withClient((client) => listCurrentUserJobs(client, options));
     console.log(args.includes("--json")

@@ -79,6 +79,10 @@ describe("CLI onboarding", () => {
     const conflictingTable = run("projects", "--wide", "--json");
     expect(conflictingTable.exitCode).toBe(1);
     expect(conflictingTable.stderr).toContain("--wide and --json cannot be used together");
+
+    const conflictingList = run("ls", "--limit", "20", "--all");
+    expect(conflictingList.exitCode).toBe(1);
+    expect(conflictingList.stderr).toContain("--limit and --all cannot be used together");
   });
 
   test("submit rejects non-positive shared memory before platform access", () => {

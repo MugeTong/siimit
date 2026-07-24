@@ -117,6 +117,8 @@ siimit submit \
 
 ```bash
 siimit ls
+siimit ls --limit 200
+siimit ls --all
 siimit get JOB_ID
 siimit logs JOB_ID
 siimit logs JOB_ID --all
@@ -129,6 +131,8 @@ siimit remove JOB_ID
 
 查询选项：
 
+- `ls --limit NUMBER`：自动分页并返回最新的指定数量任务，默认 20
+- `ls --all`：自动分页读取全部匹配任务
 - `--wide`：不截断名称和 ID
 - `--json`：输出结构化 JSON
 - `get --raw`：输出完整平台响应，仅建议排障时使用
