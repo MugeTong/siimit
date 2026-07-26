@@ -120,6 +120,9 @@ siimit ls
 siimit ls --limit 200
 siimit ls --all
 siimit get JOB_ID
+siimit wait JOB_ID
+siimit wait JOB_ID --for running
+siimit wait JOB_ID --timeout 4h
 siimit logs JOB_ID
 siimit logs JOB_ID --all
 siimit logs JOB_ID --events
@@ -136,6 +139,16 @@ siimit remove JOB_ID
 - `--wide`：不截断名称和 ID
 - `--json`：输出结构化 JSON
 - `get --raw`：输出完整平台响应，仅建议排障时使用
+
+等待选项：
+
+- `wait JOB_ID`：立即查询一次，随后每分钟查询，直到任务成功、失败或停止
+- `--for running`：任务开始运行或提前进入终态时返回
+- `--timeout 30s|10m|2h`：限制本地等待时间；超时不会取消远程任务
+- `--json`：等待期间保持安静，只输出最终状态
+
+`Ctrl+C` 只停止本地等待，不会取消远程任务。成功任务返回退出码 0，失败或停止返回
+退出码 1，本地等待超时返回退出码 124。
 
 日志选项：
 
@@ -181,5 +194,6 @@ Siimit 遵循当前代理环境变量，不会主动关闭或改写代理。
 siimit --help
 siimit help getting-started
 siimit submit --help
+siimit wait --help
 siimit logs --help
 ```

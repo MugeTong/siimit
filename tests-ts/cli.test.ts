@@ -138,7 +138,7 @@ describe("CLI onboarding", () => {
   });
 
   test("query help explains structured output", () => {
-    for (const command of ["projects", "groups", "images", "ls", "get", "logs"]) {
+    for (const command of ["projects", "groups", "images", "ls", "get", "wait", "logs"]) {
       expect(run(command, "--help").stdout).toContain("--json");
     }
   });

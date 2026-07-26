@@ -11,6 +11,7 @@ import {
   listCommand,
   removeCommand,
   submitCommand,
+  waitCommand,
 } from "./jobs";
 import { logsCommand } from "./logs";
 import { groupsCommand, imagesCommand, projectsCommand } from "./platform";
@@ -116,6 +117,7 @@ export const commands: Record<string, Command> = {
   projects: projectsCommand,
   ls: listCommand,
   get: getCommand,
+  wait: waitCommand,
   logs: logsCommand,
   cancel: cancelCommand,
   remove: removeCommand,

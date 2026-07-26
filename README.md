@@ -54,6 +54,7 @@ siimit submit \
 ```bash
 siimit ls
 siimit get JOB_ID
+siimit wait JOB_ID
 siimit logs JOB_ID
 ```
 
@@ -68,6 +69,7 @@ images      查看个人镜像
 submit      校验或提交 GPU 任务
 ls          查看任务列表
 get         查看单个任务
+wait        等待任务开始运行或结束
 logs        查看容器输出或平台事件
 cancel      停止任务
 remove      删除任务记录

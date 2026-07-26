@@ -7,6 +7,18 @@ export function option(args: string[], name: string): string | undefined {
   return index >= 0 ? args[index + 1] : undefined;
 }
 
+export function positional(args: string[], valueOptions: readonly string[] = []): string | undefined {
+  const options = new Set(valueOptions);
+  for (let index = 0; index < args.length; index++) {
+    if (options.has(args[index]!)) {
+      index += 1;
+      continue;
+    }
+    if (!args[index]!.startsWith("-")) return args[index];
+  }
+  return undefined;
+}
+
 export function parseSubmitOptions(args: string[]): SubmitOptions {
   validateSubmitArguments(args);
   const inlineCommand = option(args, "--command") ?? option(args, "-c");

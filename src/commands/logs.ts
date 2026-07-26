@@ -12,7 +12,7 @@ import {
 } from "../domain/job-logs";
 import { validateJobId } from "../domain/job-actions";
 import type { Command } from "./command";
-import { option } from "./args";
+import { option, positional } from "./args";
 import { withClient } from "./runtime";
 
 export const logsCommand: Command = {
@@ -39,7 +39,7 @@ export const logsCommand: Command = {
     "Platform events default to 200 entries. This version does not support --follow.",
   ].join("\n"),
   async run(args) {
-    const jobId = validateJobId(positional(args));
+    const jobId = validateJobId(positional(args, ["--order", "--limit", "--scope"]));
     const requestedLimit = option(args, "--limit");
     const all = args.includes("--all");
     if (all && requestedLimit !== undefined) {
@@ -97,17 +97,6 @@ export const logsCommand: Command = {
     }
   },
 };
-
-function positional(args: string[]): string | undefined {
-  for (let index = 0; index < args.length; index++) {
-    if (args[index] === "--order" || args[index] === "--limit" || args[index] === "--scope") {
-      index += 1;
-      continue;
-    }
-    if (!args[index]!.startsWith("-")) return args[index];
-  }
-  return undefined;
-}
 
 function parseLimit(raw: string | undefined): number {
   if (raw === undefined) return 200;

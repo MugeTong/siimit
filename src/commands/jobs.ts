@@ -1,13 +1,19 @@
 import { access } from "node:fs/promises";
 import { loadAppConfig } from "../config";
 import { cancelJob, getJob, removeJob, renderJob, validateJobId } from "../domain/job-actions";
+import {
+  isSuccessfulTerminal,
+  parseDuration,
+  parseWaitTarget,
+  waitForJob,
+} from "../domain/job-wait";
 import { listCurrentUserJobs, renderJobs } from "../domain/jobs";
 import { buildSubmissionPayload } from "../domain/submission";
 import { AuthenticationError, SiimitError } from "../errors";
 import { InspireClient } from "../platform/client";
 import { createTrainJob } from "../platform/train";
 import { firstFramework, formatFrameworkResource } from "../shared/resource";
-import { option, parseSubmitOptions, positiveIntegerOption } from "./args";
+import { option, parseSubmitOptions, positional, positiveIntegerOption } from "./args";
 import type { Command } from "./command";
 import { loginWithSavedCredentials, sessionOrLogin, withClient } from "./runtime";
 import { confirm } from "./prompts";
@@ -85,6 +91,55 @@ export const getCommand: Command = {
       failure_reason: job.failureReason,
       node: job.node,
     });
+  },
+};
+
+export const waitCommand: Command = {
+  name: "wait",
+  short: "wait for a training job state",
+  description: "Wait until a job starts running or reaches a terminal state.",
+  usage: "siimit wait <job-id> [--for running|terminal] [--timeout DURATION] [--json]",
+  valueOptions: ["--for", "--timeout"],
+  flagOptions: ["--json"],
+  maxPositionals: 1,
+  details: [
+    "Options:",
+    "  --for STATE        Wait for running or terminal (default: terminal)",
+    "  --timeout DURATION Stop waiting after a duration such as 30s, 10m, or 2h",
+    "  --json             Print only the final structured result",
+    "  -h, --help         Show this help",
+    "",
+    "The job is checked immediately, then once per minute.",
+    "Ctrl+C stops only this local wait; it does not cancel the remote job.",
+  ].join("\n"),
+  async run(args) {
+    const jobId = validateJobId(positional(args, ["--for", "--timeout"]));
+    const target = parseWaitTarget(option(args, "--for"));
+    const timeoutMs = parseDuration(option(args, "--timeout"));
+    const json = args.includes("--json");
+    const result = await waitForJob(
+      () => withClient((client) => getJob(client, jobId)),
+      { target, ...(timeoutMs === undefined ? {} : { timeoutMs }) },
+      json ? {} : {
+        onStatus(job) {
+          console.log(`[${new Date().toISOString()}] ${job.status}`);
+        },
+      },
+    );
+    const output = {
+      job_id: result.job.jobId,
+      status: result.job.status,
+      exit_code: result.job.exitCode,
+      timed_out: result.timedOut,
+    };
+    if (json) emit(output);
+    else if (result.timedOut) console.log(`Timed out while job ${result.job.jobId} was ${result.job.status}.`);
+    else console.log(`Job ${result.job.jobId} reached ${result.job.status}.`);
+    if (result.timedOut) process.exitCode = 124;
+    else if (
+      !isSuccessfulTerminal(result.job.status)
+      && !(target === "running" && result.job.status === "RUNNING")
+    ) process.exitCode = 1;
   },
 };
 
