@@ -8,21 +8,21 @@
 siimit projects --wide
 ```
 
-如果查询成功，当前机器已有可复用的 Session 或登录凭证。如果命令提示缺少认证信息，再执行：
+如果查询成功，当前机器已有可复用的官方 `qz` 登录令牌。如果命令提示认证失败，再执行：
 
 ```bash
 siimit login
 ```
 
-Session 过期后，Siimit 会尝试使用保存在 `~/.config/siimit` 中的用户名和密码自动登录。配置目录权限为当前用户私有，凭证文件权限为 `0600`。
+登录采用 Keycloak Device Code 流程。令牌刷新、接口发现和 ETag 缓存由官方 `qz` 客户端负责；Siimit 不再保存用户名或密码。
 
-清除 Session：
+清除本地登录令牌：
 
 ```bash
 siimit logout
 ```
 
-同时删除 Session、用户名和密码：
+同时删除 `qz` 的本地加密密钥：
 
 ```bash
 siimit logout --forget

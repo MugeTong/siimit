@@ -8,15 +8,10 @@ class FakeClient {
     return { id: "user-1", name: "Alice" };
   }
 
-  async getJson(): Promise<Record<string, unknown>> {
-    return {
-      data: {
-        routes: [{ name: "userWorkspaceList", routes: [{ name: "训练空间", path: "ws-1" }] }],
-      },
-    };
-  }
-
   async postJson(path: string, body: Record<string, unknown>): Promise<Record<string, unknown>> {
+    if (path.includes("Action=ListWorkspaces")) {
+      return { Result: { items: [{ name: "训练空间", id: "ws-1" }] } };
+    }
     expect(path).toContain("Action=ListJobs");
     expect(body.created_by).toBe("user-1");
     expect(body.status).toBe("job_running");
@@ -58,6 +53,7 @@ describe("job listing", () => {
         path: string,
         body: Record<string, unknown>,
       ): Promise<Record<string, unknown>> {
+        if (path.includes("Action=ListWorkspaces")) return super.postJson(path, body);
         expect(path).toContain("Action=ListJobs");
         const page = Number(body.page_num);
         const pageSize = Number(body.page_size);
@@ -94,7 +90,8 @@ describe("job listing", () => {
     class AllJobsClient extends FakeClient {
       calls = 0;
 
-      override async postJson(): Promise<Record<string, unknown>> {
+      override async postJson(path: string, body: Record<string, unknown>): Promise<Record<string, unknown>> {
+        if (path.includes("Action=ListWorkspaces")) return super.postJson(path, body);
         this.calls += 1;
         const start = (this.calls - 1) * 100;
         const count = Math.min(100, 205 - start);

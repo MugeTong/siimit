@@ -6,49 +6,36 @@ import { listGroups, renderGroups } from "../src/domain/groups";
 class FakeClient {
   constructor(private readonly used = 10, private readonly lowPriority = 2) {}
 
-  async getJson(path: string): Promise<Record<string, unknown>> {
-    if (path.endsWith("/user/routes/default")) {
-      return {
-        data: {
-          routes: [{
-            name: "userWorkspaceList",
-            routes: [{ name: "分布式训练空间", path: "ws-train" }],
-          }],
-        },
-      };
-    }
-    if (path.includes("/compute_resources/logic_compute_groups/")) {
-      return {
-        data: {
-          logic_resouces: {
-            gpu_total: 16,
-            gpu_used: this.used,
-            gpu_low_priority_used: this.lowPriority,
-          },
-          gpu_type_stats: [{ gpu_info: { gpu_type_display: "H200" } }],
-        },
-      };
-    }
-    throw new Error(`Unexpected GET ${path}`);
-  }
-
   async postJson(path: string, body: Record<string, unknown>): Promise<Record<string, unknown>> {
-    if (path.endsWith("/project/list")) {
-      return { data: { items: [{ id: "project-1", name: "课程项目", priority_name: "6" }] } };
+    if (path.includes("Action=ListWorkspaces")) {
+      return { Result: { items: [{ id: "ws-train", name: "分布式训练空间" }] } };
     }
-    if (path.includes("logic_compute_groups/list")) {
+    if (path.includes("Action=GetProjectForPage")) {
+      return { Result: { items: [{ id: "project-1", name: "课程项目", priority_name: "6" }] } };
+    }
+    if (path.includes("Action=ListLogicComputeGroups")) {
       expect((body.filter as Record<string, unknown>).workspace_id).toBe("ws-train");
       return {
-        data: {
+        Result: {
           logic_compute_groups: [{ logic_compute_group_id: "lcg-1", name: "训练区-H200" }],
         },
       };
     }
-    if (path.includes("resource_prices/logic_compute_groups")) {
+    if (path.includes("Action=GetLogicComputeGroupResourceSpecPrices")) {
       expect(body.logic_compute_group_id).toBe("lcg-1");
       expect(body.project_id).toBe("project-1");
       expect(body.task_priority).toBe(4);
-      return { data: [{ gpu_count: 8 }, { gpu_count: 2 }, { gpu_count: 4 }, { gpu_count: 8 }] };
+      return { Result: [{ gpu_count: 8 }, { gpu_count: 2 }, { gpu_count: 4 }, { gpu_count: 8 }] };
+    }
+    if (path.includes("Action=GetLogicComputeGroupResource")) {
+      return { Result: {
+        logic_resouces: {
+          gpu_total: 16,
+          gpu_used: this.used,
+          gpu_low_priority_used: this.lowPriority,
+        },
+        gpu_type_stats: [{ gpu_info: { gpu_type_display: "H200" } }],
+      } };
     }
     throw new Error(`Unexpected POST ${path}`);
   }

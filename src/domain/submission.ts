@@ -51,6 +51,7 @@ export async function buildSubmissionPayload(
     image_type: image.source,
     image: image.address,
     instance_count: options.nodes ?? config.nodes,
+    spec_id: quota.quotaId,
     cpu: quota.cpu,
     gpu_count: quota.gpu,
     mem_gi: quota.memoryGiB,

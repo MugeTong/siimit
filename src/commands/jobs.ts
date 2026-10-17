@@ -9,13 +9,13 @@ import {
 } from "../domain/job-wait";
 import { listCurrentUserJobs, renderJobs } from "../domain/jobs";
 import { buildSubmissionPayload } from "../domain/submission";
-import { AuthenticationError, SiimitError } from "../errors";
+import { SiimitError } from "../errors";
 import { InspireClient } from "../platform/client";
 import { createTrainJob } from "../platform/train";
 import { firstFramework, formatFrameworkResource } from "../shared/resource";
 import { option, parseSubmitOptions, positional, positiveIntegerOption } from "./args";
 import type { Command } from "./command";
-import { loginWithSavedCredentials, sessionOrLogin, withClient } from "./runtime";
+import { withClient } from "./runtime";
 import { confirm } from "./prompts";
 
 export const listCommand: Command = {
@@ -216,15 +216,8 @@ export const submitCommand: Command = {
     const commandFile = option(args, "--command-file");
     if (commandFile) await access(commandFile);
     const config = await loadAppConfig();
-    let client = new InspireClient(await sessionOrLogin());
-    let payload: Record<string, unknown>;
-    try {
-      payload = await buildSubmissionPayload(client, options, config);
-    } catch (error) {
-      if (!(error instanceof AuthenticationError)) throw error;
-      client = new InspireClient(await loginWithSavedCredentials());
-      payload = await buildSubmissionPayload(client, options, config);
-    }
+    const client = new InspireClient();
+    const payload = await buildSubmissionPayload(client, options, config);
     if (args.includes("--dry-run")) {
       if (args.includes("--json")) return emit({ dry_run: true, payload });
       console.log(dryRunSummary(options, payload));

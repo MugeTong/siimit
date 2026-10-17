@@ -6,30 +6,24 @@ import { DEFAULT_APP_CONFIG } from "../src/config";
 class FakeClient {
   constructor(private readonly expectedPriority = 4) {}
 
-  async getJson(path: string): Promise<Record<string, unknown>> {
-    expect(path).toBe("/api/v1/user/routes/default");
-    return {
-      data: {
-        routes: [{ name: "userWorkspaceList", routes: [{ name: "训练空间", path: "ws-1" }] }],
-      },
-    };
-  }
-
   async postJson(path: string, body: Record<string, unknown>): Promise<Record<string, unknown>> {
-    if (path.endsWith("/project/list")) {
+    if (path.includes("Action=ListWorkspaces")) {
+      return { Result: { items: [{ name: "训练空间", id: "ws-1" }] } };
+    }
+    if (path.includes("Action=GetProjectForPage")) {
       return {
-        data: { items: [{ id: "project-1", name: "示例项目", priority_name: "7" }] },
+        Result: { items: [{ id: "project-1", name: "示例项目", priority_name: "7" }] },
       };
     }
-    if (path.endsWith("/logic_compute_groups/list")) {
-      return { data: { logic_compute_groups: [{ logic_compute_group_id: "lcg-1", name: "H200训练区" }] } };
+    if (path.includes("Action=ListLogicComputeGroups")) {
+      return { Result: { logic_compute_groups: [{ logic_compute_group_id: "lcg-1", name: "H200训练区" }] } };
     }
-    if (path.endsWith("/resource_prices/logic_compute_groups")) {
+    if (path.includes("Action=GetLogicComputeGroupResourceSpecPrices")) {
       expect(body.schedule_config_type).toBe("SCHEDULE_CONFIG_TYPE_TRAIN");
       expect(body.project_id).toBe("project-1");
       expect(body.task_priority).toBe(this.expectedPriority);
       return {
-        data: [{
+        Result: [{
           quota_id: "quota-1",
           gpu_count: 4,
           cpu_count: 80,
@@ -39,11 +33,11 @@ class FakeClient {
         }],
       };
     }
-    if (path.endsWith("/image/list")) {
+    if (path.includes("Action=ListImages")) {
       const filter = body.filter as Record<string, unknown>;
       if (filter.visibility === "VISIBILITY_PRIVATE") {
         return {
-          data: {
+          Result: {
             images: [{
               name: "train",
               version: "latest",
@@ -56,14 +50,14 @@ class FakeClient {
           },
         };
       }
-      return { data: { images: [] } };
+      return { Result: { images: [] } };
     }
     throw new Error(`Unexpected path: ${path}`);
   }
 }
 
 describe("submission payload", () => {
-  test("resolves names and builds CreateJobConsole payload", async () => {
+  test("resolves names and builds CreateJob payload", async () => {
     const payload = await buildSubmissionPayload(new FakeClient() as unknown as InspireClient, {
       name: "train-a",
       command: "python -c 'raise SystemExit(7)'",
@@ -86,6 +80,7 @@ describe("submission payload", () => {
     expect(config.instance_count).toBe(3);
     expect(config.image).toBe("registry.internal/team/train:latest");
     expect(config.image_type).toBe("SOURCE_PRIVATE");
+    expect(config.spec_id).toBe("quota-1");
     expect((config.resource_spec_price as Record<string, unknown>).quota_id).toBe("quota-1");
   });
 

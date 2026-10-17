@@ -13,8 +13,8 @@ export async function listPrivateImages(
   client: InspireClient,
   workspaceId: string,
 ): Promise<PrivateImage[]> {
-  const response = await client.postJson("/api/v1/image/list", {
-    page: 0,
+  const response = await client.postJson("/api/v2/image?Action=ListImages", {
+    PageNumber: 0,
     page_size: -1,
     filter: {
       source_list: ["SOURCE_PRIVATE", "SOURCE_PUBLIC"],
@@ -22,7 +22,7 @@ export async function listPrivateImages(
       registry_hint: { workspace_id: workspaceId },
     },
   });
-  return records(asRecord(response.data)?.images)
+  return records(asRecord(response.Result)?.images)
     .flatMap((item): PrivateImage[] => {
       const address = String(item.address ?? "").trim();
       if (!address) return [];

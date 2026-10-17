@@ -64,7 +64,7 @@ export async function listProjectPage(
   },
 ): Promise<ProjectPage> {
   const response = await client.postJson(
-    "/api/v1/project/list",
+    "/api/v2/project?Action=GetProjectForPage",
     {
       page: options.page,
       page_size: 100,
@@ -75,10 +75,9 @@ export async function listProjectPage(
     },
     options.referer ?? "/projects",
   );
-  if (response.code !== undefined && Number(response.code) !== 0) {
-    throw new ApiError(`Project list failed: ${String(response.message ?? response.code)}.`);
-  }
-  const data = asRecord(response.data) ?? {};
+  const error = asRecord(asRecord(response.ResponseMetadata)?.Error);
+  if (error) throw new ApiError(`Project list failed: ${String(error.Message ?? error.Code)}.`);
+  const data = asRecord(response.Result) ?? {};
   const items = records(data.items).flatMap((item): PlatformProject[] => {
     const id = String(item.id ?? "");
     if (!id) return [];

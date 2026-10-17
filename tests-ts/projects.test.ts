@@ -7,8 +7,7 @@ import { availableTaskPriorities, taskPriorityValue } from "../src/platform/cata
 class FakeClient {
   async postJson(): Promise<Record<string, unknown>> {
     return {
-      code: 0,
-      data: {
+      Result: {
         total: 1,
         items: [{
           id: "project-1",

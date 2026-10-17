@@ -7,39 +7,6 @@ import { ConfigurationError } from "./errors";
 
 export const DEFAULT_BASE_URL = "https://qz.sii.edu.cn";
 
-const storageCookieSchema = z.object({
-  name: z.string().min(1),
-  value: z.string(),
-  domain: z.string().optional(),
-  path: z.string().default("/"),
-  expires: z.number().optional(),
-  httpOnly: z.boolean().optional(),
-  secure: z.boolean().optional(),
-  sameSite: z.string().optional(),
-});
-
-const browserSessionSchema = z.object({
-  base_url: z.url(),
-  username: z.string().nullable().optional(),
-  created_at: z.number().default(() => Date.now() / 1000),
-  storage_state: z.object({
-    cookies: z.array(storageCookieSchema),
-    origins: z.array(z.unknown()).default([]),
-  }),
-  user_detail: z.record(z.string(), z.unknown()).nullable().optional(),
-});
-
-export type BrowserSession = z.infer<typeof browserSessionSchema>;
-export type StorageCookie = z.infer<typeof storageCookieSchema>;
-
-const credentialsSchema = z.object({
-  username: z.string().min(1),
-  password: z.string().min(1),
-  base_url: z.url().default(DEFAULT_BASE_URL),
-});
-
-export type Credentials = z.infer<typeof credentialsSchema>;
-
 const appConfigSchema = z.object({
   workspace: z.string().min(1).default("分布式训练空间"),
   nodes: z.number().int().positive().default(1),
@@ -65,44 +32,6 @@ function credentialsPath(): string {
 
 export function appConfigPath(): string {
   return join(configDir(), "config.json");
-}
-
-export async function saveSession(session: BrowserSession, path = sessionPath()): Promise<string> {
-  await mkdir(dirname(path), { recursive: true, mode: 0o700 });
-  const temporary = `${path}.tmp`;
-  await writeFile(temporary, `${JSON.stringify(session, null, 2)}\n`, { mode: 0o600 });
-  await rename(temporary, path);
-  await chmod(path, 0o600);
-  return path;
-}
-
-export async function loadSession(path = sessionPath()): Promise<BrowserSession> {
-  try {
-    return browserSessionSchema.parse(JSON.parse(await readFile(path, "utf8")));
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      throw new ConfigurationError("No cached session. Run `siimit login` first.");
-    }
-    throw new ConfigurationError(`Cannot read cached session at ${path}: ${errorMessage(error)}`);
-  }
-}
-
-export async function saveCredentials(
-  credentials: Credentials,
-  path = credentialsPath(),
-): Promise<void> {
-  await writePrivateJson(path, credentialsSchema.parse(credentials));
-}
-
-export async function loadCredentials(path = credentialsPath()): Promise<Credentials> {
-  try {
-    return credentialsSchema.parse(JSON.parse(await readFile(path, "utf8")));
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      throw new ConfigurationError("No saved credentials. Run `siimit login` first.");
-    }
-    throw new ConfigurationError(`Cannot read saved credentials: ${errorMessage(error)}`);
-  }
 }
 
 export async function loadAppConfig(path = appConfigPath()): Promise<AppConfig> {

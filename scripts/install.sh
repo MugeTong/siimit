@@ -46,6 +46,11 @@ printf "    \033[90mVersion: $($INSTALL_DIR/siimit --version)\033[0m\n\n"
 printf "    \033[90mLocation: $INSTALL_DIR/siimit\033[0m\n\n"
 printf "    \033[90mNext: Run \033[1m\033[36msiimit --help\033[0m to get started.\033[0m\n"
 
+if ! command -v qz &>/dev/null; then
+    printf "\033[1m\033[33m\n⚠ The official qz client is also required by siimit 0.19.\033[0m\n"
+    printf "    \033[90mInstall it using the institute-provided installer, then run: siimit login\033[0m\n"
+fi
+
 # Detect whether the local bin directory is in the user's PATH
 if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
     printf "\033[1m\033[33m\n⚠ Warning: $INSTALL_DIR is not in your PATH.\033[0m\n"

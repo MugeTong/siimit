@@ -44,11 +44,11 @@ describe("job mutations", () => {
     });
   });
 
-  test("removes through the verified train_job delete endpoint", async () => {
+  test("removes through the v2 DeleteJob endpoint", async () => {
     const client = new FakeClient();
     await removeJob(client as unknown as InspireClient, "job-123");
     expect(client.calls[0]).toEqual({
-      path: "/api/v1/train_job/delete",
+      path: "/api/v2/train?Action=DeleteJob",
       body: { job_id: "job-123" },
     });
   });
@@ -74,7 +74,9 @@ describe("job mutations", () => {
 
   test("treats repeated removal as success", async () => {
     const client = new FakeClient();
-    client.postJson = async () => ({ code: 1, message: "train job already deleted" });
+    client.postJson = async () => ({
+      ResponseMetadata: { Error: { Code: "NotFound", Message: "train job already deleted" } },
+    });
     expect(await removeJob(client as unknown as InspireClient, "job-123"))
       .toEqual({ already_absent: true });
   });

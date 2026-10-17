@@ -1,4 +1,3 @@
-import { ApiError } from "../../errors";
 import { asRecord, records } from "../../shared/records";
 import type { InspireClient } from "../client";
 
@@ -25,13 +24,12 @@ export async function listComputeGroups(
   client: InspireClient,
   workspaceId: string,
 ): Promise<ComputeGroup[]> {
-  const response = await client.postJson("/api/v1/logic_compute_groups/list", {
+  const response = await client.postJson("/api/v2/workspace?Action=ListLogicComputeGroups", {
     page_size: -1,
     page_num: 1,
     filter: { workspace_id: workspaceId },
   });
-  ensureV1Success(response, "Compute group list");
-  return records(asRecord(response.data)?.logic_compute_groups).flatMap((item) => {
+  return records(asRecord(response.Result)?.logic_compute_groups).flatMap((item) => {
     const id = String(item.logic_compute_group_id ?? item.id ?? "");
     if (!id) return [];
     return [{
@@ -43,13 +41,14 @@ export async function listComputeGroups(
 
 export async function getGroupCapacity(
   client: InspireClient,
+  workspaceId: string,
   groupId: string,
 ): Promise<GroupCapacity> {
-  const response = await client.getJson(
-    `/api/v1/compute_resources/logic_compute_groups/${encodeURIComponent(groupId)}`,
-  );
-  ensureV1Success(response, "Compute group capacity");
-  const data = asRecord(response.data) ?? {};
+  const response = await client.postJson("/api/v2/workspace?Action=GetLogicComputeGroupResource", {
+    workspace_id: workspaceId,
+    logic_compute_group_id: groupId,
+  });
+  const data = asRecord(response.Result) ?? {};
   const resources = asRecord(data.logic_resouces) ?? {};
   const gpuInfo = asRecord(records(data.gpu_type_stats)[0]?.gpu_info);
   return {
@@ -64,15 +63,14 @@ export async function listGroupPrices(
   client: InspireClient,
   request: GroupPriceRequest,
 ): Promise<Record<string, unknown>[]> {
-  const response = await client.postJson("/api/v1/resource_prices/logic_compute_groups", {
+  const response = await client.postJson("/api/v2/resource-price?Action=GetLogicComputeGroupResourceSpecPrices", {
     workspace_id: request.workspaceId,
     schedule_config_type: "SCHEDULE_CONFIG_TYPE_TRAIN",
     logic_compute_group_id: request.groupId,
     project_id: request.projectId,
     task_priority: request.taskPriority,
   });
-  ensureV1Success(response, "Compute group prices");
-  const data = response.data;
+  const data = response.Result;
   return Array.isArray(data)
     ? records(data)
     : records(
@@ -80,15 +78,6 @@ export async function listGroupPrices(
       asRecord(data)?.resource_spec_prices ??
       asRecord(data)?.list
     );
-}
-
-function ensureV1Success(
-  response: Record<string, unknown>,
-  label: string,
-): void {
-  if (response.code !== undefined && Number(response.code) !== 0) {
-    throw new ApiError(`${label} failed: ${String(response.message ?? response.code)}.`);
-  }
 }
 
 function integer(value: unknown): number {

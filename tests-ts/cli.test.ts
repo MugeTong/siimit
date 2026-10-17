@@ -18,8 +18,8 @@ describe("CLI onboarding", () => {
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("Usage: siimit login");
     expect(result.stdout).not.toContain("Username:");
-    expect(result.stdout).toContain("reuse an existing Siimit session");
-    expect(result.stdout).toContain("Run login only when");
+    expect(result.stdout).toContain("official qz client");
+    expect(result.stdout).toContain("no longer stores your username or password");
   });
 
   test("submit reports all missing required options", () => {

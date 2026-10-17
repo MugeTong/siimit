@@ -13,10 +13,10 @@ export async function createTrainJob(
   payload: Record<string, unknown>,
 ): Promise<{ jobId?: string; result: Record<string, unknown> }> {
   const response = await client.postJson(
-    "/api/v2/train?Action=CreateJobConsole",
+    "/api/v2/train?Action=CreateJob",
     payload,
   );
-  const candidate = v2Result(response, "CreateJobConsole", (code, message) => {
+  const candidate = v2Result(response, "CreateJob", (code, message) => {
     const priority = Number(payload.task_priority);
     const advice = /优先级|priority/i.test(message) && Number.isFinite(priority)
       ? ` Requested priority: ${priority}. Run \`siimit projects\` to see whether low or high is available.`
@@ -70,17 +70,18 @@ export async function removeTrainJob(
   jobId: string,
 ): Promise<Record<string, unknown>> {
   const response = await client.postJson(
-    "/api/v1/train_job/delete",
+    "/api/v2/train?Action=DeleteJob",
     { job_id: jobId },
   );
-  if (response.code !== undefined && Number(response.code) !== 0) {
-    const message = String(response.message ?? response.code);
+  const error = v2Error(response);
+  if (error) {
+    const message = error.message;
     if (/already deleted|already absent|not found/i.test(message)) {
       return { already_absent: true };
     }
     throw new ApiError(`Delete job failed: ${message}.`);
   }
-  return record(response.data) ?? {};
+  return record(response.Result) ?? {};
 }
 
 export async function listTrainJobInstances(

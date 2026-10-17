@@ -12,6 +12,8 @@ Siimit 是面向 Inspire 分布式训练空间的 GPU 任务提交工具，支�
 
 支持 Linux x86_64：
 
+Siimit 0.19 使用平台官方 `qz` 客户端完成设备登录、Token 续期和接口发现。请先按院内发布方式安装 `qz`，确认 `qz --version` 可用。
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/MugeTong/siimit/main/scripts/install.sh | bash
 ```
@@ -25,7 +27,7 @@ siimit --help
 
 ## 快速开始
 
-先查询可用项目。如果当前机器没有登录信息，Siimit 会提示运行 `siimit login`：
+先查询可用项目。如果当前机器没有有效的官方登录信息，Siimit 会提示运行 `siimit login`：
 
 ```bash
 siimit projects --wide
@@ -61,8 +63,8 @@ siimit logs JOB_ID
 ## 常用命令
 
 ```text
-login       登录并保存自动续期凭证
-logout      清除 Session；--forget 同时删除凭证
+login       使用官方 qz 设备授权登录
+logout      清除本地 qz 登录令牌
 projects    查看项目、优先级和点券
 groups      查看 GPU 分区、容量和允许的 GPU 数
 images      查看个人镜像

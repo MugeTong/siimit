@@ -1,58 +1,74 @@
-import type { BrowserSession } from "../config";
-import { ApiError, AuthenticationError } from "../errors";
-import { CookieHttpClient } from "./http";
+import { ApiError, AuthenticationError, ConfigurationError } from "../errors";
 
 export class InspireClient {
-  private readonly http: CookieHttpClient;
-  private readonly baseUrl: string;
-
-  constructor(session: BrowserSession, http?: CookieHttpClient) {
-    this.baseUrl = session.base_url.replace(/\/$/, "");
-    this.http = http ?? CookieHttpClient.fromStorage(session.storage_state.cookies);
-  }
-
   async whoami(): Promise<Record<string, unknown>> {
-    const response = await this.http.get(`${this.baseUrl}/api/v1/user/detail`, {
-      headers: { accept: "application/json", referer: `${this.baseUrl}/login` },
-    });
-    const data = await this.responseJson(response);
-    return isRecord(data.data) ? data.data : data;
+    const response = await this.postJson("/api/v2/user?Action=GetUserDetail", {});
+    return isRecord(response.Result) ? response.Result : response;
   }
 
-  async getJson(path: string, referer = "/jobs/distributedTraining"): Promise<Record<string, unknown>> {
-    const response = await this.http.get(`${this.baseUrl}${path}`, {
-      headers: { accept: "application/json", referer: `${this.baseUrl}${referer}` },
-    });
-    return this.responseJson(response);
+  async getJson(path: string): Promise<Record<string, unknown>> {
+    return this.postJson(path, {});
   }
 
   async postJson(
     path: string,
     body: Record<string, unknown>,
-    referer = "/jobs/distributedTraining",
+    _referer = "/jobs/distributedTraining",
   ): Promise<Record<string, unknown>> {
-    const response = await this.http.post(`${this.baseUrl}${path}`, {
-      headers: {
-        accept: "application/json",
-        "content-type": "application/json",
-        referer: `${this.baseUrl}${referer}`,
-      },
-      body: JSON.stringify(body),
-    });
-    return this.responseJson(response);
-  }
-
-  private async responseJson(response: Response): Promise<Record<string, unknown>> {
-    if (response.status === 401 || response.status === 403) throw new AuthenticationError("Session expired or access denied. Run `siimit login` again.");
-    if (!response.ok) throw new ApiError(`Inspire returned HTTP ${response.status}.`);
+    const endpoint = parseEndpoint(path);
+    let process: Bun.Subprocess;
     try {
-      const data: unknown = await response.json();
+      process = Bun.spawn([
+        "qz",
+        endpoint.service,
+        endpoint.action,
+        "--output",
+        "json",
+        "--data",
+        JSON.stringify(body),
+      ], { stdout: "pipe", stderr: "pipe" });
+    } catch (error) {
+      throw new ConfigurationError(
+        `The official qz client is required by siimit 0.19. Install it, then run \`siimit login\`. ${errorMessage(error)}`,
+      );
+    }
+
+    const [stdout, stderr, exitCode] = await Promise.all([
+      new Response(process.stdout as ReadableStream<Uint8Array>).text(),
+      new Response(process.stderr as ReadableStream<Uint8Array>).text(),
+      process.exited,
+    ]);
+    if (exitCode !== 0) {
+      const message = stderr.trim() || stdout.trim() || `qz exited with status ${exitCode}`;
+      if (exitCode === 2 || /auth|token|login|session expired|invalid_grant/i.test(message)) {
+        throw new AuthenticationError(`${message} Run \`siimit login\` and try again.`);
+      }
+      throw new ApiError(message);
+    }
+
+    try {
+      const data: unknown = JSON.parse(stdout);
       if (isRecord(data)) return data;
-    } catch {}
-    throw new ApiError("Inspire returned invalid JSON.");
+    } catch (error) {
+      throw new ApiError(`qz returned invalid JSON: ${errorMessage(error)}`);
+    }
+    throw new ApiError("qz returned an unexpected response.");
   }
+}
+
+function parseEndpoint(path: string): { service: string; action: string } {
+  const match = /^\/api\/v2\/([^?]+)\?Action=([^&]+)$/.exec(path);
+  if (!match) throw new ApiError(`Unsupported Inspire endpoint: ${path}`);
+  return {
+    service: decodeURIComponent(match[1]!),
+    action: decodeURIComponent(match[2]!),
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

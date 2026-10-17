@@ -40,7 +40,7 @@ export async function listGroups(
   const rows: GroupRow[] = [];
   let priceRequestCount = 0;
   for (const group of groups) {
-    const capacity = await getGroupCapacity(client, group.id);
+    const capacity = await getGroupCapacity(client, workspaceId, group.id);
     const total = capacity.total;
     if (total <= 0) continue;
     const used = capacity.used;

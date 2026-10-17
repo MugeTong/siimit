@@ -57,7 +57,7 @@ const helpCommand: Command = {
       console.log(`  ${command.name}${" ".repeat(width - stringWidth(command.name) + 2)}${command.short}`);
     }
     console.log("\nGetting started:");
-    console.log("  1. siimit projects --wide                         # reuses an existing login; copy PROJECT");
+    console.log("  1. siimit projects --wide                         # reuses the official qz login; copy PROJECT");
     console.log("     If prompted by an authentication error: siimit login, then retry.");
     console.log("  2. siimit groups --project PROJECT --wide         # copy GROUP and choose GPU count");
     console.log("  3. siimit images --wide                           # copy IMAGE");
@@ -72,11 +72,11 @@ function gettingStartedHelp(): string {
   return [
     "Getting started with Siimit",
     "",
-    "1. Check whether this machine already has a reusable Siimit session:",
+    "1. Check whether this machine already has a reusable qz login:",
     "   siimit projects --wide",
     "",
     "   If it succeeds, do not run login again. Continue with the returned PROJECT.",
-    "   If Siimit reports that no session or credentials are available, run:",
+    "   If Siimit reports an authentication error, run:",
     "   siimit login",
     "   Then retry: siimit projects --wide",
     "",

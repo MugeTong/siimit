@@ -58,18 +58,17 @@ describe("training platform API", () => {
     }
   });
 
-  test("keeps remove idempotent through the legacy v1 endpoint", async () => {
+  test("keeps remove idempotent through the v2 endpoint", async () => {
     const client = new FakeClient();
     client.response = {
-      code: 1,
-      message: "train job already deleted",
+      ResponseMetadata: { Error: { Code: "NotFound", Message: "train job already deleted" } },
     };
     expect(await removeTrainJob(
       client as unknown as InspireClient,
       "job-123",
     )).toEqual({ already_absent: true });
     expect(client.calls[0]).toEqual({
-      path: "/api/v1/train_job/delete",
+      path: "/api/v2/train?Action=DeleteJob",
       body: { job_id: "job-123" },
     });
   });

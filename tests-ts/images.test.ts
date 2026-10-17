@@ -5,21 +5,16 @@ import { listVisibleImages, renderImages } from "../src/domain/images";
 import type { InspireClient } from "../src/platform/client";
 
 class FakeClient {
-  async getJson(): Promise<Record<string, unknown>> {
-    return {
-      data: {
-        routes: [{ name: "userWorkspaceList", routes: [{ name: "分布式训练空间", path: "ws-1" }] }],
-      },
-    };
-  }
-
   async postJson(path: string, body: Record<string, unknown>): Promise<Record<string, unknown>> {
-    expect(path).toBe("/api/v1/image/list");
+    if (path.includes("Action=ListWorkspaces")) {
+      return { Result: { items: [{ name: "分布式训练空间", id: "ws-1" }] } };
+    }
+    expect(path).toBe("/api/v2/image?Action=ListImages");
     const filter = body.filter as Record<string, unknown>;
     expect(filter.visibility).toBe("VISIBILITY_PRIVATE");
     expect(filter.registry_hint).toEqual({ workspace_id: "ws-1" });
     return {
-      data: {
+      Result: {
         images: [{
           name: "ubuntu25.04-product",
           version: "1.0.1",

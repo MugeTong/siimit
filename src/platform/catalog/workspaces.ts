@@ -8,17 +8,14 @@ export interface Workspace {
 }
 
 export async function listWorkspaces(client: InspireClient): Promise<Workspace[]> {
-  const response = await client.getJson("/api/v1/user/routes/default");
-  const routes = asRecord(response.data)?.routes;
-  const workspaces: Workspace[] = [];
-  for (const group of records(routes)) {
-    if (group.name !== "userWorkspaceList") continue;
-    for (const item of records(group.routes)) {
-      const id = String(item.path ?? "");
-      if (id) workspaces.push({ id, name: String(item.name ?? id) });
-    }
-  }
-  return workspaces;
+  const response = await client.postJson("/api/v2/workspace?Action=ListWorkspaces", {
+    PageNumber: 0,
+    page_size: 100,
+  });
+  return records(asRecord(response.Result)?.items).flatMap((item): Workspace[] => {
+    const id = String(item.id ?? "");
+    return id ? [{ id, name: String(item.name ?? id) }] : [];
+  });
 }
 
 export async function resolveWorkspace(client: InspireClient, requested: string): Promise<string> {
