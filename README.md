@@ -1,85 +1,15 @@
-# Siimit
+# siimit-reload
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Bun](https://img.shields.io/badge/runtime-Bun-black?logo=bun)](https://bun.sh/)
-[![license](https://img.shields.io/github/license/MugeTong/siimit)](LICENSE)
-[![release](https://img.shields.io/github/v/release/MugeTong/siimit?color=green)](https://github.com/MugeTong/siimit/releases)
-![downloads](https://img.shields.io/github/downloads/MugeTong/siimit/total)
-
-Siimit 是面向 Inspire 分布式训练空间的 GPU 任务提交工具，支持资源查询、任务提交、状态管理和容器日志。
-
-## 安装
-
-支持 Linux x86_64：
-
-Siimit 0.19 使用平台官方 `qz` 客户端完成设备登录、Token 续期和接口发现。请先按院内发布方式安装 `qz`，确认 `qz --version` 可用。
+To install dependencies:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/MugeTong/siimit/main/scripts/install.sh | bash
+bun install
 ```
 
-安装完成后：
+To run:
 
 ```bash
-siimit version
-siimit --help
+bun run index.ts
 ```
 
-## 快速开始
-
-先查询可用项目。如果当前机器没有有效的官方登录信息，Siimit 会提示运行 `siimit login`：
-
-```bash
-siimit projects --wide
-siimit groups --project PROJECT --wide
-siimit images --wide
-```
-
-先试运行，不会创建任务：
-
-```bash
-siimit submit \
-  --name hello \
-  --command 'nvidia-smi' \
-  --project PROJECT \
-  --group GROUP \
-  --gpus 1 \
-  --image IMAGE \
-  --max-time 1 \
-  --dry-run
-```
-
-确认资源正确后移除 `--dry-run`，重新执行并确认提交。
-
-查看任务：
-
-```bash
-siimit ls
-siimit get JOB_ID
-siimit wait JOB_ID
-siimit logs JOB_ID
-```
-
-## 常用命令
-
-```text
-login       使用官方 qz 设备授权登录
-logout      清除本地 qz 登录令牌
-projects    查看项目、优先级和点券
-groups      查看 GPU 分区、容量和允许的 GPU 数
-images      查看个人镜像
-submit      校验或提交 GPU 任务
-ls          查看任务列表
-get         查看单个任务
-wait        等待任务开始运行或结束
-logs        查看容器输出或平台事件
-cancel      停止任务
-remove      删除任务记录
-config      查看当前配置
-```
-
-完整说明：
-
-- [使用指南](docs/USAGE.md)
-- [开发者指南](docs/DEVELOPMENT.md)
-- [代码架构](docs/ARCHITECTURE.md)
+This project was created using `bun init` in bun v1.3.14. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
