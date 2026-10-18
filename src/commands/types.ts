@@ -1,6 +1,7 @@
 export type CommandContext = {
     args: string[];
-    flags: Record<string, string | boolean>;
+    params: Record<string, string>;
+    flags: Set<string>;
 }
 export interface Command {
     name: string;
