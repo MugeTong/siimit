@@ -62,18 +62,18 @@ class FileDiscoveryStorage implements DiscoveryStorage {
         !discovery.endpoints ||
         !discovery.expiresAt
       ) {
-        throw new Error("Invalid discovery data in storage.");
+        throw new Error("Invalid discovery data in storage");
       }
 
       if (Date.now() >= discovery.expiresAt) {
         requireCheck = discovery;
-        throw new Error("Discovery data has expired.");
+        throw new Error("Discovery data expired");
       }
 
       const endpoint = discovery.endpoints[requiredService];
       if (!endpoint) {
         throw new Error(
-          `Required service ${requiredService} not found in discovery data.`,
+          `Required service ${requiredService} not found in discovery data`,
         );
       }
 
@@ -93,7 +93,7 @@ class FileDiscoveryStorage implements DiscoveryStorage {
           const endpoint = requireCheck.endpoints[requiredService];
           if (!endpoint) {
             throw new Error(
-              `Required service ${requiredService} not found in discovery data.`,
+              `Required service ${requiredService} not found in discovery data`,
             );
           }
           return endpoint;
@@ -125,7 +125,7 @@ class FileDiscoveryStorage implements DiscoveryStorage {
       const endpoint = newDiscovery.endpoints[requiredService];
       if (!endpoint) {
         throw new Error(
-          `Required service ${requiredService} not found in discovery data.`,
+          `Required service ${requiredService} not found in discovery data`,
         );
       }
 

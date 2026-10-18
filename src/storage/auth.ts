@@ -45,7 +45,7 @@ class FileAuthStorage implements AuthStorage {
         !auth.refreshExpiresAt ||
         !auth.tokenType
       ) {
-        throw new Error("Invalid auth data in storage.");
+        throw new Error("Invalid auth data in storage");
       }
 
       // Check if the access token has expired

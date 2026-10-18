@@ -1,4 +1,5 @@
 import type { Command, CommandContext } from "./types";
+import fs from "fs";
 import { groupsApi, jobsApi } from "@/api";
 import { resolvePriority, PRIORITIES, type Priority } from "@/types";
 import { parseInteger, prettyPrint } from "@/utils";
@@ -48,6 +49,19 @@ async function validateParams(
   if (!ctx.params["--command"] && !ctx.params["--command-file"]) {
     throw new Error(
       "Missing required parameter: either --command or --command-file must be provided",
+    );
+  }
+  if (ctx.params["--command"] && ctx.params["--command-file"]) {
+    throw new Error(
+      "Invalid parameters: --command and --command-file cannot be used together",
+    );
+  }
+  if (
+    ctx.params["--command-file"] &&
+    !fs.existsSync(ctx.params["--command-file"])
+  ) {
+    throw new Error(
+      "FileNotFoundError: The specified command file does not exist",
     );
   }
   const command = ctx.params["--command"];
@@ -126,9 +140,15 @@ async function submitHandler(ctx: CommandContext): Promise<void> {
   const params = await validateParams(ctx);
 
   if (!ctx.flags.has("--yes")) {
-    console.log(
-      "Parameters validated successfully. Use the --yes flag to confirm submission.",
-    );
+    if (!ctx.flags.has("--json")) {
+      console.log(
+        JSON.stringify({ validated: true, submitted: false }, null, 2),
+      );
+    } else {
+      console.log(
+        "Parameters validated successfully. Use the --yes flag to confirm submission.",
+      );
+    }
     return;
   }
 
