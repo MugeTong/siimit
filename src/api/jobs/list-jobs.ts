@@ -1,16 +1,19 @@
 import { authStorage, discoveryStorage, workspaceStorage } from "@/storage";
 import type { ServiceResponse } from "../types";
-import type { JobStatus } from "@/types";
+import type { JobStatus, Priority } from "@/types";
+import { resolvePriority } from "@/types";
 
 type JobMetadata = {
   jobId: string;
   name: string;
   status: JobStatus;
+  priority: Priority;
   groupId: string;
   groupName: string;
   projectId: string;
   projectName: string;
   createdAt: number;
+  finishedAt?: number;
   gpuCount: number;
   command: string;
 };
@@ -21,11 +24,13 @@ type JobApiMetadata = {
   job_id: string;
   name: string;
   status: JobApiStatus;
+  priority_name: string;
   logic_compute_group_id: string;
   logic_compute_group_name: string;
   project_id: string;
   project_name: string;
   created_at: string;
+  finished_at?: string;
   gpu_count: number;
   command: string;
 };
@@ -89,6 +94,7 @@ export async function listJobs(
     jobId: job.job_id,
     name: job.name,
     status: fromApiStatus(job.status),
+    priority: resolvePriority(Number(job.priority_name)),
     groupId: job.logic_compute_group_id,
     groupName: job.logic_compute_group_name,
     projectId: job.project_id,

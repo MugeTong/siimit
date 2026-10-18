@@ -29,7 +29,7 @@ export const groupsCommand: Command = {
   positionalNames: [],
   valueOptions: {},
   flagOptions: {
-    "--json": "output the results in JSON format",
+    "--json": "output in JSON format",
   },
   run: groupsHandler,
 };

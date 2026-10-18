@@ -23,3 +23,10 @@ export function checkPriority(value: number): Array<Priority> {
   }
   return ["low", "high"];
 }
+
+export function resolvePriority(value: number): Priority {
+  if (value < 4) {
+    return "low";
+  }
+  return "high";
+}

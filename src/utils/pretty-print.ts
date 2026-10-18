@@ -3,7 +3,7 @@ import Table from "cli-table3";
 type Keys = string[];
 
 export function prettyPrint<T extends object>(
-  data: T[],
+  data: T[] | T,
   asJson: boolean,
   tableKeys: readonly (keyof NoInfer<T> & string)[],
 ): void {
@@ -14,6 +14,10 @@ export function prettyPrint<T extends object>(
       head: [...tableKeys],
       colWidths: tableKeys.map(() => 20),
     });
+
+    if (!Array.isArray(data)) {
+      data = [data];
+    }
 
     data.forEach((item) => {
       const row = tableKeys.map((key) => String(item[key] ?? "-"));

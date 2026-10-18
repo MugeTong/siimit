@@ -1,4 +1,3 @@
-import { discoveryApi } from "@/api/discovery";
 import type { Command, CommandContext } from "./types";
 import { jobsApi } from "@/api";
 import { parseInteger, prettyPrint } from "@/utils";
@@ -48,6 +47,7 @@ async function listHandler(ctx: CommandContext): Promise<void> {
     "jobId",
     "name",
     "status",
+    "priority",
     "groupName",
     "createdAt",
   ]);
@@ -66,7 +66,7 @@ export const listCommand: Command = {
     "--status": `filter by status: ${JOB_STATUSES.join(", ")}`,
   },
   flagOptions: {
-    "--json": "output the results in JSON format",
+    "--json": "output in JSON format",
   },
   run: listHandler,
 };
