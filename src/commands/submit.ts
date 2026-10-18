@@ -94,10 +94,10 @@ async function validateParams(
     throw new Error("Missing required parameter: --max-time");
   }
   const factorMap: Record<string, number> = {
-    s: 1,
-    m: 60,
-    h: 3600,
-    d: 86400,
+    s: 1000,
+    m: 60000,
+    h: 3600000,
+    d: 86400000,
   };
   const timeUnit = ctx.params["--max-time"].slice(-1);
   const timeValue = ctx.params["--max-time"].slice(0, -1);
@@ -107,10 +107,8 @@ async function validateParams(
     );
   }
   let time = parseInteger(timeValue);
-  if (!time || time < 0) {
-    throw new Error(
-      "Invalid value for --max-time, must be a non-negative integer",
-    );
+  if (!time || time < 1) {
+    throw new Error("Invalid value for --max-time, must be a positive integer");
   }
   const maxTime = time * factorMap[timeUnit];
 
