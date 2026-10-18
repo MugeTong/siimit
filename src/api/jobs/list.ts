@@ -5,15 +5,15 @@ import type { ServiceResponse } from "../types";
 import type { JobStatus } from "@/types";
 
 type JobMetadata = {
-  job_id: string;
+  jobId: string;
   name: string;
   status: JobStatus;
-  logic_compute_group_id: string;
-  logic_compute_group_name: string;
-  project_id: string;
-  project_name: string;
-  created_at: number;
-  gpu_count: number;
+  groupId: string;
+  groupName: string;
+  projectId: string;
+  projectName: string;
+  createdAt: number;
+  gpuCount: number;
   command: string;
 };
 
@@ -81,20 +81,21 @@ export async function listJobs(
   }
   const payload = (await response.json()) as ListJobsResponse;
   if (!("Result" in payload)) {
-    throw new Error(
-      `API Error: ${payload.ResponseMetadata.Error.Code} - ${payload.ResponseMetadata.Error.Message}`,
-    );
+    const errorCode = payload.ResponseMetadata?.Error?.Code;
+    const errorMessage = payload.ResponseMetadata?.Error?.Message;
+    throw new Error(`API Error: ${errorCode} - ${errorMessage}`);
   }
+
   return payload.Result.jobs.map((job) => ({
-    job_id: job.job_id,
+    jobId: job.job_id,
     name: job.name,
     status: fromApiStatus(job.status),
-    logic_compute_group_id: job.logic_compute_group_id,
-    logic_compute_group_name: job.logic_compute_group_name,
-    project_id: job.project_id,
-    project_name: job.project_name,
-    created_at: Number(job.created_at),
-    gpu_count: job.gpu_count,
+    groupId: job.logic_compute_group_id,
+    groupName: job.logic_compute_group_name,
+    projectId: job.project_id,
+    projectName: job.project_name,
+    createdAt: Number(job.created_at),
+    gpuCount: job.gpu_count,
     command: job.command,
   }));
 }

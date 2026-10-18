@@ -38,18 +38,18 @@ async function listHandler(ctx: CommandContext): Promise<void> {
   const results = data.map((job) => ({
     ...job,
     status: job.status.toUpperCase(),
-    created_at: new Date(job.created_at).toLocaleString("sv-SE", {
+    createdAt: new Date(job.createdAt).toLocaleString("sv-SE", {
       timeZone: "Asia/Shanghai",
     }),
   }));
 
   // Output the results
   prettyPrint(results, ctx.flags.has("--json"), [
-    "job_id",
+    "jobId",
     "name",
     "status",
-    "logic_compute_group_name",
-    "created_at",
+    "groupName",
+    "createdAt",
   ]);
 }
 
