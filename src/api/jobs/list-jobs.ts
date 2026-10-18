@@ -85,8 +85,8 @@ export async function listJobs(
   }
   const payload = (await response.json()) as ListJobsResponse;
   if (!("Result" in payload)) {
-    const errorCode = payload.ResponseMetadata?.Error?.Code;
-    const errorMessage = payload.ResponseMetadata?.Error?.Message;
+    const errorCode = payload.ResponseMetadata.Error.Code;
+    const errorMessage = payload.ResponseMetadata.Error.Message;
     throw new Error(`API Error: ${errorCode} - ${errorMessage}`);
   }
 

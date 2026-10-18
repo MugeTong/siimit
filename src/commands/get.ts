@@ -4,12 +4,8 @@ import { parseInteger, prettyPrint } from "@/utils";
 import { isJobStatus, JOB_STATUSES } from "@/types";
 
 async function listHandler(ctx: CommandContext): Promise<void> {
-  // Parameter validation
-  if (!ctx.args[0]) {
-    throw new Error("Job ID is required");
-  }
-
-  const data = await jobsApi.getJob(ctx.args[0]);
+  const jobId: string = ctx.args[0]!;
+  const data = await jobsApi.getJob(jobId);
 
   // Handle the results for better display
   const result = {
@@ -38,7 +34,7 @@ export const getCommand: Command = {
   short: "get job details by job ID",
   description: "Get job details by job ID.",
   aliases: [],
-  positionalNames: ["<jobId>"],
+  positionalNames: ["<job-id>"],
   valueOptions: {},
   flagOptions: {
     "--json": "Output in JSON format",

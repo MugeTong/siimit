@@ -23,8 +23,8 @@ async function groupsHandler(ctx: CommandContext): Promise<void> {
 export const groupsCommand: Command = {
   name: "groups",
   hidden: false,
-  short: "list available groups",
-  description: "List all available groups and their usage.",
+  short: "list computation groups",
+  description: "List all available computation groups and their usage.",
   aliases: [],
   positionalNames: [],
   valueOptions: {},

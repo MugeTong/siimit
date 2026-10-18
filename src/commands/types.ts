@@ -6,8 +6,8 @@ export type CommandContext = {
 export interface Command {
   name: string;
   hidden?: boolean;
-  short?: string;
-  description?: string;
+  short: string;
+  description: string;
   aliases?: Array<string>;
   positionalNames?: Array<string>;
   valueOptions?: Record<string, string>;

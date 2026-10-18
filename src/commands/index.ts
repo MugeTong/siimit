@@ -6,14 +6,16 @@ import { projectsCommand } from "./projects";
 import { imagesCommand } from "./images";
 import { groupsCommand } from "./groups";
 import { getCommand } from "./get";
+import { stopCommand } from "./stop";
 
-type FlagRow = [flag: string, description: string];
+type FlagRow = [flag: string, short: string];
 
 const packageJson = await Bun.file("package.json").json();
 
 const helpCommand: Command = {
   name: "help",
   hidden: true,
+  short: "show help information",
   description: "Show help information.",
   run: async (ctx: CommandContext) => {
     console.log(`${packageJson.description}`);
@@ -21,9 +23,10 @@ const helpCommand: Command = {
     console.log(`  ${packageJson.name} [flags]`);
     console.log(`  ${packageJson.name} [command]`);
     console.log(`\nAvailable Commands:`);
+    const maxCommandLength = Math.max(...commandList.map((command) => command.name.length));
     commandList.forEach((command) => {
       if (command.hidden) return;
-      console.log(`  ${command.name}\t\t${command.description}`);
+      console.log(`  ${command.name.padEnd(maxCommandLength + 2)}${command.short}`);
     });
     console.log(`\nFlags:`);
     console.log(`  -h, --help     show help information`);
@@ -37,6 +40,7 @@ const helpCommand: Command = {
 const versionCommand: Command = {
   name: "version",
   hidden: true,
+  short: "show version information",
   description: "Show version information.",
   run: async (ctx: CommandContext) => {
     console.log(`${packageJson.name} version ${packageJson.version}`);
@@ -46,11 +50,12 @@ const versionCommand: Command = {
 const commandList: Command[] = [
   loginCommand,
   logoutCommand,
-  listCommand,
   projectsCommand,
   imagesCommand,
   groupsCommand,
+  listCommand,
   getCommand,
+  stopCommand,
   helpCommand,
   versionCommand,
 ];
@@ -99,10 +104,10 @@ export async function executeCommand(
     console.log(`\nFlags:`);
     const flagRows: Array<FlagRow> = [
       ...Object.entries(command.valueOptions ?? {}).map(
-        ([flag, description]): FlagRow => [`${flag} <value>`, description],
+        ([flag, short]): FlagRow => [`${flag} <value>`, short],
       ),
       ...Object.entries(command.flagOptions ?? {}).map(
-        ([flag, description]): FlagRow => [flag, description],
+        ([flag, short]): FlagRow => [flag, short],
       ),
       ["-h, --help", "show help information"],
     ];

@@ -1,4 +1,4 @@
-import { authStorage, discoveryStorage, workspaceStorage } from "@/storage";
+import { authStorage, discoveryStorage } from "@/storage";
 import type { ServiceResponse } from "../types";
 import { resolvePriority, type JobStatus, type Priority } from "@/types";
 
@@ -58,8 +58,8 @@ export async function getJob(jobId: string): Promise<JobDetails> {
 
   const payload = (await response.json()) as GetJobResponse;
   if (!("Result" in payload)) {
-    const errorCode = payload.ResponseMetadata?.Error?.Code;
-    const errorMessage = payload.ResponseMetadata?.Error?.Message;
+    const errorCode = payload.ResponseMetadata.Error.Code;
+    const errorMessage = payload.ResponseMetadata.Error.Message;
     throw new Error(`API Error: ${errorCode} - ${errorMessage}`);
   }
 

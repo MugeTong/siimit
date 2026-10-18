@@ -1,9 +1,9 @@
-import { cancelJob } from "./cancel";
 import { getJob } from "./get-job";
 import { listJobs } from "./list-jobs";
+import { stopJob } from "./stop-job";
 
 export const jobsApi = {
-  cancelJob,
   getJob,
   listJobs,
+  stopJob,
 };
