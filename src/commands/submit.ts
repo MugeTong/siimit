@@ -79,12 +79,26 @@ async function validateParams(
   if (!ctx.params["--max-time"]) {
     throw new Error("Missing required parameter: --max-time");
   }
-  const maxTime = parseInteger(ctx.params["--max-time"]);
-  if (!maxTime || maxTime < 0) {
+  const factorMap: Record<string, number> = {
+    s: 1,
+    m: 60,
+    h: 3600,
+    d: 86400,
+  };
+  const timeUnit = ctx.params["--max-time"].slice(-1);
+  const timeValue = ctx.params["--max-time"].slice(0, -1);
+  if (!factorMap[timeUnit]) {
+    throw new Error(
+      "Invalid unit for --max-time, must end with 's', 'm', 'h', or 'd'",
+    );
+  }
+  let time = parseInteger(timeValue);
+  if (!time || time < 0) {
     throw new Error(
       "Invalid value for --max-time, must be a non-negative integer",
     );
   }
+  const maxTime = time * factorMap[timeUnit];
 
   let nodes: number | undefined = 1; // default value
   if (ctx.params["--nodes"]) {
@@ -160,8 +174,8 @@ export const submitCommand: Command = {
     "--priority": "job priority level",
     "--command": "command to execute for the job",
     "--command-file": "path to a file to execute using bash",
-    "--gpus": "number of GPUs for one node",
-    "--max-time": "maximum seconds to run",
+    "--gpus": "number of GPUs per node: 1, 2, 4, 8",
+    "--max-time": "maximum time to run (e.g. 60s, 10m, 2h, 1d)",
     "--nodes": "number of nodes used (default: 1)",
   },
   flagOptions: {
