@@ -5,6 +5,10 @@ set -euo pipefail
 BINARY_FILE="dist/siimit-linux-x64"
 INSTALL_DIR="$HOME/.local/bin"
 
+# Build the binary
+printf "\033[1m\033[36m==>\033[0m\033[1m Building siimit...\033[0m\n"
+bun run build > /dev/null 2>&1 &
+
 # Install the binary
 printf "\033[1m\033[36m==>\033[0m\033[1m Installing siimit...\033[0m\n"
 chmod +x "$BINARY_FILE"

@@ -17,7 +17,7 @@
     "build": "bun build --compile --minify --target bun-linux-x64 src/index.ts --outfile dist/siimit-linux-x64",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "install-local": "bun run build && bash scripts/install-local.sh"
+    "install-local": "bash scripts/install-local.sh"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -27,6 +27,6 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "cli-table3": "^0.6.5"
+    "console-table-printer": "^2.16.1"
   }
 }

@@ -1,6 +1,4 @@
-import Table from "cli-table3";
-
-type Keys = string[];
+import { Table } from "console-table-printer";
 
 export function prettyPrint<T extends object>(
   data: T[] | T,
@@ -9,21 +7,22 @@ export function prettyPrint<T extends object>(
 ): void {
   if (asJson) {
     console.log(JSON.stringify(data, null, 2));
-  } else {
-    const table = new Table({
-      head: [...tableKeys],
-      colWidths: tableKeys.map(() => 20),
-    });
-
-    if (!Array.isArray(data)) {
-      data = [data];
-    }
-
-    data.forEach((item) => {
-      const row = tableKeys.map((key) => String(item[key] ?? "-"));
-      table.push(row);
-    });
-
-    console.log(table.toString());
+    return;
   }
+
+  const rows = Array.isArray(data) ? data : [data];
+
+  const table = new Table({
+    columns: tableKeys.map((key) => ({ name: key, title: key })),
+  });
+
+  rows.forEach((item) => {
+    const row: Record<string, string> = {};
+    tableKeys.forEach((key) => {
+      row[key] = String(item[key] ?? "-");
+    });
+    table.addRow(row);
+  });
+
+  table.printTable();
 }
