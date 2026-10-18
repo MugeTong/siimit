@@ -10,9 +10,9 @@ import { stopCommand } from "./stop";
 import { deleteCommand } from "./delete";
 import { submitCommand } from "./submit";
 
-type FlagRow = [flag: string, short: string];
+import packageJson from "../../package.json" with { type: "json" };
 
-const packageJson = await Bun.file("package.json").json();
+type FlagRow = [flag: string, short: string];
 
 const helpCommand: Command = {
   name: "help",
@@ -91,8 +91,6 @@ export async function executeCommand(
 ): Promise<void> {
   // Handle the case where -h or --help is passed after a command
   if (argv.length > 0 && (argv[0] === "--help" || argv[0] === "-h")) {
-    const packageJson = await Bun.file("package.json").json();
-
     console.log(`${command.description || "No description available."}`);
 
     console.log(`\nUsage:`);
