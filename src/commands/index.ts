@@ -7,6 +7,7 @@ import { imagesCommand } from "./images";
 import { groupsCommand } from "./groups";
 import { getCommand } from "./get";
 import { stopCommand } from "./stop";
+import { deleteCommand } from "./delete";
 
 type FlagRow = [flag: string, short: string];
 
@@ -56,6 +57,7 @@ const commandList: Command[] = [
   listCommand,
   getCommand,
   stopCommand,
+  deleteCommand,
   helpCommand,
   versionCommand,
 ];
