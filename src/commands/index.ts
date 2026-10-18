@@ -2,9 +2,8 @@ import type { Command, CommandContext } from "./types";
 import { loginCommand } from "./login";
 import { logoutCommand } from "./logout";
 import { listCommand } from "./list";
-import { cancelCommand } from "./cancel";
-import { deleteCommand } from "./remove";
 import { projectsCommand } from "./projects";
+import { imagesCommand } from "./images";
 
 type FlagRow = [flag: string, description: string];
 
@@ -47,7 +46,7 @@ const commandList: Command[] = [
   logoutCommand,
   listCommand,
   projectsCommand,
-  cancelCommand,
+  imagesCommand,
   helpCommand,
   versionCommand,
 ];

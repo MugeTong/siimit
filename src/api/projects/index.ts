@@ -20,11 +20,12 @@ type ProjectApiMetadata = {
   member_remain_budget: string;
 };
 
-type GetProjectsResponse = ServiceResponse<{
+type ListProjectsResponse = ServiceResponse<{
   items: Array<ProjectApiMetadata>;
   total: number;
 }>;
-async function getProjects(): Promise<Array<ProjectMetadata>> {
+
+async function listProjects(): Promise<Array<ProjectMetadata>> {
   const token = await authStorage.load();
   const endpoint = await discoveryStorage.load("project");
   const url = new URL(endpoint, "https://qz.sii.edu.cn");
@@ -46,7 +47,7 @@ async function getProjects(): Promise<Array<ProjectMetadata>> {
   if (!response.ok) {
     throw new Error(`Failed to fetch projects: ${response.statusText}`);
   }
-  const payload = (await response.json()) as GetProjectsResponse;
+  const payload = (await response.json()) as ListProjectsResponse;
   if (!("Result" in payload)) {
     const errorCode = payload.ResponseMetadata.Error.Code;
     const errorMessage = payload.ResponseMetadata.Error.Message;
@@ -63,5 +64,5 @@ async function getProjects(): Promise<Array<ProjectMetadata>> {
 }
 
 export const projectsApi = {
-  getProjects,
+  listProjects,
 };
