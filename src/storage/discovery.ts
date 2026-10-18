@@ -22,6 +22,7 @@ const services = [
   "model-hub",
   "user",
   "cluster",
+  "resource-price",
 ] as const;
 
 type Service = (typeof services)[number];

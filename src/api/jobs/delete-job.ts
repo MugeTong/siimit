@@ -25,8 +25,8 @@ export async function deleteJob(jobId: string): Promise<void> {
   }
   const payload = (await response.json()) as DeleteJobResponse;
   if (!("Service" in payload.ResponseMetadata)) {
-      const errorCode = payload.ResponseMetadata.Error.Code;
-      const errorMessage = payload.ResponseMetadata.Error.Message;
-      throw new Error(`API Error: ${errorCode} - ${errorMessage}`);
+    const errorCode = payload.ResponseMetadata.Error.Code;
+    const errorMessage = payload.ResponseMetadata.Error.Message;
+    throw new Error(`API Error: ${errorCode} - ${errorMessage}`);
   }
 }

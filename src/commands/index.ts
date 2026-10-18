@@ -8,6 +8,7 @@ import { groupsCommand } from "./groups";
 import { getCommand } from "./get";
 import { stopCommand } from "./stop";
 import { deleteCommand } from "./delete";
+import { submitCommand } from "./submit";
 
 type FlagRow = [flag: string, short: string];
 
@@ -24,10 +25,14 @@ const helpCommand: Command = {
     console.log(`  ${packageJson.name} [flags]`);
     console.log(`  ${packageJson.name} [command]`);
     console.log(`\nAvailable Commands:`);
-    const maxCommandLength = Math.max(...commandList.map((command) => command.name.length));
+    const maxCommandLength = Math.max(
+      ...commandList.map((command) => command.name.length),
+    );
     commandList.forEach((command) => {
       if (command.hidden) return;
-      console.log(`  ${command.name.padEnd(maxCommandLength + 2)}${command.short}`);
+      console.log(
+        `  ${command.name.padEnd(maxCommandLength + 2)}${command.short}`,
+      );
     });
     console.log(`\nFlags:`);
     console.log(`  -h, --help     show help information`);
@@ -55,6 +60,7 @@ const commandList: Command[] = [
   imagesCommand,
   groupsCommand,
   listCommand,
+  submitCommand,
   getCommand,
   stopCommand,
   deleteCommand,

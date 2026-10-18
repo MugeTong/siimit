@@ -5,12 +5,14 @@ type ImageMetadata = {
   imageId: string;
   name: string;
   status: string;
+  address: string;
 };
 
 type ImageApiMetadata = {
   image_id: string;
   name: string;
   status: string;
+  address: string;
 };
 
 type ListImagesResponse = ServiceResponse<{
@@ -49,6 +51,7 @@ async function lsitImages(): Promise<Array<ImageMetadata>> {
     imageId: image.image_id,
     name: image.name,
     status: image.status,
+    address: image.address,
   }));
 }
 
