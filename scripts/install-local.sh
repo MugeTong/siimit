@@ -13,7 +13,7 @@ mv "$BINARY_FILE" "$INSTALL_DIR/siimit"
 printf "\033[1m\033[32m\n✔ Siimit successfully installed!\033[0m\n\n"
 printf "    \033[90mVersion: $($INSTALL_DIR/siimit --version)\033[0m\n\n"
 printf "    \033[90mLocation: $INSTALL_DIR/siimit\033[0m\n\n"
-printf "    \033[90mNext: Run \033[1m\033[36msiimit --help\033[0m to get started.\033[0m\n"
+printf "\033[90mNext: Run \033[1m\033[36msiimit --help\033[0m to get started.\033[0m\n"
 
 # Detect whether the local bin directory is in the user's PATH
 if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
