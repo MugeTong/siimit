@@ -1,6 +1,6 @@
 import type { Command, CommandContext } from "./types";
 import { jobsApi } from "@/api";
-import { parseInteger, prettyPrint } from "@/utils";
+import { parseInteger, prettyPrint, timestamp2date } from "@/utils";
 import { isJobStatus, JOB_STATUSES } from "@/types";
 
 async function listHandler(ctx: CommandContext): Promise<void> {
@@ -37,9 +37,7 @@ async function listHandler(ctx: CommandContext): Promise<void> {
   const results = data.map((job) => ({
     ...job,
     status: job.status.toUpperCase(),
-    createdAt: new Date(job.createdAt).toLocaleString("sv-SE", {
-      timeZone: "Asia/Shanghai",
-    }),
+    createdAt: timestamp2date(job.createdAt),
   }));
 
   // Output the results

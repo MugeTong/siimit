@@ -2,10 +2,8 @@ import { authStorage, discoveryStorage } from "@/storage";
 import type { ServiceResponse } from "../types";
 
 type ImageMetadata = {
-  imageId: string;
   name: string;
   status: string;
-  address: string;
 };
 
 type ImageApiMetadata = {
@@ -48,10 +46,8 @@ async function lsitImages(): Promise<Array<ImageMetadata>> {
   }
 
   return payload.Result.images.map((image) => ({
-    imageId: image.image_id,
     name: image.name,
     status: image.status,
-    address: image.address,
   }));
 }
 

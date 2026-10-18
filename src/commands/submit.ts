@@ -155,7 +155,7 @@ export const submitCommand: Command = {
   positionalNames: ["<job-name>"],
   valueOptions: {
     "--project": "project Id",
-    "--image": "image used",
+    "--image": "name of the image to use",
     "--group": "computation group Id",
     "--priority": "job priority level",
     "--command": "command to execute for the job",
