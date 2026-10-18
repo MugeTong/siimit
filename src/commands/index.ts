@@ -4,6 +4,7 @@ import { logoutCommand } from "./logout";
 import { listCommand } from "./list";
 import { projectsCommand } from "./projects";
 import { imagesCommand } from "./images";
+import { groupsCommand } from "./groups";
 
 type FlagRow = [flag: string, description: string];
 
@@ -47,6 +48,7 @@ const commandList: Command[] = [
   listCommand,
   projectsCommand,
   imagesCommand,
+  groupsCommand,
   helpCommand,
   versionCommand,
 ];

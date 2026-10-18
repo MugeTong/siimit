@@ -62,7 +62,7 @@ export const listCommand: Command = {
   positionalNames: [],
   valueOptions: {
     "--limit": "number of jobs displayed (default: 10)",
-    "--keyword": "filter by a keyword in name",
+    "--keyword": "filter by a keyword in name or job ID",
     "--status": `filter by status: ${JOB_STATUSES.join(", ")}`,
   },
   flagOptions: {

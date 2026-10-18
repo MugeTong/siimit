@@ -1,6 +1,4 @@
-import { authStorage } from "@/storage";
-import { discoveryStorage } from "@/storage";
-import { discoveryApi } from "../discovery";
+import { authStorage, discoveryStorage, workspaceStorage } from "@/storage";
 import type { ServiceResponse } from "../types";
 import type { JobStatus } from "@/types";
 
@@ -56,6 +54,7 @@ export async function listJobs(
 ): Promise<Array<JobMetadata>> {
   const token = await authStorage.load();
   const endpoint = await discoveryStorage.load("train");
+  const workspaceId = await workspaceStorage.load();
   const url = new URL(endpoint, "https://qz.sii.edu.cn");
   url.searchParams.set("Action", "ListJobs");
   const response = await fetch(url, {
@@ -65,11 +64,11 @@ export async function listJobs(
       "x-inspire-client-source": "inspire-cli/5294f02",
     },
     body: JSON.stringify({
-      PageSize: params.limit ?? 10,
-      PageNumber: 1,
-      Keyword: params.keyword,
-      Status: params.status ? toApiStatus(params.status) : undefined,
-      WorkspaceId: "ws-9dcc0e1f-80a4-4af2-bc2f-0e352e7b17e6",
+      page_size: params.limit ?? 10,
+      page_number: 1,
+      keyword: params.keyword,
+      status: params.status ? toApiStatus(params.status) : undefined,
+      workspace_id: workspaceId,
     }),
     method: "POST",
   });

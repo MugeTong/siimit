@@ -1,5 +1,4 @@
-import { authStorage } from "@/storage";
-import { discoveryStorage } from "@/storage";
+import { authStorage, discoveryStorage, workspaceStorage } from "@/storage";
 import type { ServiceResponse } from "../types";
 import { checkPriority } from "@/types";
 import type { Priority } from "@/types";
@@ -28,6 +27,7 @@ type ListProjectsResponse = ServiceResponse<{
 async function listProjects(): Promise<Array<ProjectMetadata>> {
   const token = await authStorage.load();
   const endpoint = await discoveryStorage.load("project");
+  const workspaceId = await workspaceStorage.load();
   const url = new URL(endpoint, "https://qz.sii.edu.cn");
   url.searchParams.set("Action", "GetProjectListV2");
   const response = await fetch(url, {
@@ -38,8 +38,9 @@ async function listProjects(): Promise<Array<ProjectMetadata>> {
     },
     body: JSON.stringify({
       filter: {
-        workspace_id: "ws-9dcc0e1f-80a4-4af2-bc2f-0e352e7b17e6",
+        workspace_id: workspaceId,
       },
+      page_size: 5000,
     }),
     method: "POST",
   });
