@@ -8,7 +8,7 @@ async function listHandler(ctx: CommandContext): Promise<void> {
   let limit;
   if (ctx.params["--limit"]) {
     limit = parseInteger(ctx.params["--limit"]);
-    if (!limit) {
+    if (limit === undefined) {
       throw new Error(
         `Limit must be an integer, got '${ctx.params["--limit"]}'`,
       );

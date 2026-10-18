@@ -71,8 +71,8 @@ async function validateParams(
     throw new Error("Missing required parameter: --gpus");
   }
   const gpus = parseInteger(ctx.params["--gpus"]);
-  if (!gpus || gpus < 0) {
-    throw new Error("Invalid value for --gpus, must be a non-negative integer");
+  if (gpus === undefined) {
+    throw new Error("Invalid value for --gpus, must be a positive integer");
   }
   // Detect if the gpus number is a valid option.
   const quotaMap: Record<number, string> = await groupsApi.getQuotaMap(
@@ -107,16 +107,33 @@ async function validateParams(
     );
   }
   let time = parseInteger(timeValue);
-  if (!time || time < 1) {
-    throw new Error("Invalid value for --max-time, must be a positive integer");
+  if (time !== undefined) {
+    if (time <= 0) {
+      throw new Error(
+        "Invalid value for --max-time, must be a positive integer",
+      );
+    }
+  } else {
+    throw new Error(`Invalid value for --max-time, got ${timeValue}`);
   }
   const maxTime = time * factorMap[timeUnit];
 
   let nodes: number | undefined = 1; // default value
   if (ctx.params["--nodes"]) {
     nodes = parseInteger(ctx.params["--nodes"]);
-    if (!nodes || nodes < 1) {
-      throw new Error("Invalid value for --nodes, must be a positive integer");
+    if (nodes !== undefined) {
+      if (nodes < 1) {
+        throw new Error(
+          "Invalid value for --nodes, must be a positive integer",
+        );
+      }
+      if (nodes > 1 && gpus !== 8) {
+        throw new Error("Set --nodes > 1 is only allowed when --gpus=8");
+      }
+    } else {
+      throw new Error(
+        `Invalid value for --nodes, got ${ctx.params["--nodes"]}`,
+      );
     }
   }
 

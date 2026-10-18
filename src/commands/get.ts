@@ -1,7 +1,6 @@
 import type { Command, CommandContext } from "./types";
 import { jobsApi } from "@/api";
-import { parseInteger, prettyPrint, timestamp2date } from "@/utils";
-import { isJobStatus, JOB_STATUSES } from "@/types";
+import { prettyPrint, timestamp2date } from "@/utils";
 
 async function listHandler(ctx: CommandContext): Promise<void> {
   const jobId: string = ctx.args[0]!;
