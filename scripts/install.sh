@@ -1,55 +1,60 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Check required dependencies
-for dependency in xz curl sha256sum mktemp; do
-    if ! command -v "$dependency" &>/dev/null; then
-        printf "\033[31merror:\033[0m '%s' is required but not installed.\n" "$dependency"
+OS="$(uname -s)"
+ARCH="$(uname -m)"
+
+case "$OS" in
+  Linux)
+    OS_NAME="linux"
+    ;;
+  Darwin)
+    OS_NAME="darwin"
+    ;;
+  *)
+    echo "Unsupported OS: $OS" >&2
+    exit 1
+    ;;
+esac
+
+case "$ARCH" in
+  x86_64|amd64)
+    ARCH_NAME="x64"
+    ;;
+  aarch64|arm64)
+    ARCH_NAME="arm64"
+    ;;
+  *)
+    echo "Unsupported architecture: $ARCH" >&2
+    exit 1
+    ;;
+esac
+
+for dep in xz curl; do
+    if ! command -v "$dep" >/dev/null 2>&1; then
+        printf "\033[31merror:\033[0m '%s' is required but not installed.\n" "$dep"
         exit 1
     fi
 done
 
-SYSTEM=$(uname -s)
-ARCH=$(uname -m)
-
-PKG_URL="https://github.com/MugeTong/siimit/releases/latest/download/siimit-${SYSTEM,,}-${ARCH}.xz"
-CHECKSUM_URL="${PKG_URL}.sha256"
+PKG_URL="http://github.com/MugeTong/siimit/releases/latest/download/siimit-${OS_NAME}-${ARCH_NAME}.xz"
+PKG_PATH="/tmp/siimit-${OS_NAME}-${ARCH_NAME}.xz"
 INSTALL_DIR="$HOME/.local/bin"
-TEMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/siimit-install.XXXXXXXX")
-PKG_NAME="siimit-${SYSTEM,,}-${ARCH}.xz"
-PKG_PATH="$TEMP_DIR/$PKG_NAME"
-CHECKSUM_PATH="$PKG_PATH.sha256"
-TEMP_BINARY="$TEMP_DIR/siimit"
-trap 'rm -rf "$TEMP_DIR"' EXIT
 
-# Download and verify the binary from GitHub Releases
+# Download and extract the package
 printf "\033[1m\033[36m==>\033[0m\033[1m Downloading siimit...\033[0m\n"
 curl -fsSLo "$PKG_PATH" "$PKG_URL"
-curl -fsSLo "$CHECKSUM_PATH" "$CHECKSUM_URL"
-printf "\033[1m\033[36m==>\033[0m\033[1m Verifying siimit...\033[0m\n"
-if ! (cd "$TEMP_DIR" && sha256sum -c "$PKG_NAME.sha256" &>/dev/null); then
-    printf "\033[31merror:\033[0m checksum verification failed; siimit was not installed.\n" >&2
-    exit 1
-fi
 
-# Unzip the binary and move it to the install directory
+# Extract the package
 printf "\033[1m\033[36m==>\033[0m\033[1m Extracting siimit...\033[0m\n"
-xz -d -c "$PKG_PATH" > "$TEMP_BINARY"
-
-# Install the binary
-printf "\033[1m\033[36m==>\033[0m\033[1m Installing siimit...\033[0m\n"
-chmod +x "$TEMP_BINARY"
 mkdir -p "$INSTALL_DIR"
-mv "$TEMP_BINARY" "$INSTALL_DIR/siimit"
+xz -d -c "$PKG_PATH" > "$INSTALL_DIR/siimit"
+chmod +x "$INSTALL_DIR/siimit"
+rm "$PKG_PATH"
 printf "\033[1m\033[32m\n✔ Siimit successfully installed!\033[0m\n\n"
 printf "    \033[90mVersion: $($INSTALL_DIR/siimit --version)\033[0m\n\n"
 printf "    \033[90mLocation: $INSTALL_DIR/siimit\033[0m\n\n"
-printf "    \033[90mNext: Run \033[1m\033[36msiimit --help\033[0m to get started.\033[0m\n"
-
-if ! command -v qz &>/dev/null; then
-    printf "\033[1m\033[33m\n⚠ The official qz client is also required by siimit 0.19.\033[0m\n"
-    printf "    \033[90mInstall it using the institute-provided installer, then run: siimit login\033[0m\n"
-fi
+printf "\033[90mNext: Run \033[1m\033[36msiimit --help\033[0m to get started.\033[0m\n"
 
 # Detect whether the local bin directory is in the user's PATH
 if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then

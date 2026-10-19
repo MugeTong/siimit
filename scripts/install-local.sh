@@ -1,13 +1,42 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+OS="$(uname -s)"
+ARCH="$(uname -m)"
+
+case "$OS" in
+  Linux)
+    OS_NAME="linux"
+    ;;
+  Darwin)
+    OS_NAME="darwin"
+    ;;
+  *)
+    echo "Unsupported OS: $OS" >&2
+    exit 1
+    ;;
+esac
+
+case "$ARCH" in
+  x86_64|amd64)
+    ARCH_NAME="x64"
+    ;;
+  aarch64|arm64)
+    ARCH_NAME="arm64"
+    ;;
+  *)
+    echo "Unsupported architecture: $ARCH" >&2
+    exit 1
+    ;;
+esac
+
 # Set the installation directory
-BINARY_FILE="dist/siimit-linux-x64"
+BINARY_FILE="dist/siimit-${OS_NAME}-${ARCH_NAME}"
 INSTALL_DIR="$HOME/.local/bin"
 
 # Build the binary
 printf "\033[1m\033[36m==>\033[0m\033[1m Building siimit...\033[0m\n"
-bun run build > /dev/null 2>&1 &
+bun build --compile --minify --target "bun-${OS_NAME}-${ARCH_NAME}" src/index.ts --outfile "$BINARY_FILE" >/dev/null
 
 # Install the binary
 printf "\033[1m\033[36m==>\033[0m\033[1m Installing siimit...\033[0m\n"

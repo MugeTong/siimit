@@ -24,7 +24,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build release installers
-        run: bun run build && bun run package
+        run: bun run build:all && bun run package
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v3

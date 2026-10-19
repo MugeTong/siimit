@@ -14,7 +14,10 @@
   "scripts": {
     "dev": "bun run src/index.ts",
     "test": "bun test",
-    "build": "bun build --compile --minify --target bun-linux-x64 src/index.ts --outfile dist/siimit-linux-x64",
+    "build:all": "bun run build:linux && bun run build:darwin",
+    "build:linux": "bun build --compile --minify --target bun-linux-x64 src/index.ts --outfile dist/siimit-linux-x64",
+    "build:darwin": "bun build --compile --minify --target bun-darwin-arm64 src/index.ts --outfile dist/siimit-darwin-arm64",
+    "package": "xz -3 -f dist/siimit-linux-x64 dist/siimit-darwin-arm64",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "install-local": "bash scripts/install-local.sh"
