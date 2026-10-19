@@ -12,7 +12,7 @@ Siimit 是面向 Inspire 分布式训练空间的 GPU 任务提交工具，支�
 
 ## 快速开始
 
-从Releases中安装（目前只支持Linux amd64）:
+从Releases中安装（支持Linux-amd64、Darwin-arm64）:
 
 ```bash
 curl -fsSL raw.githubusercontent.com/MugeTong/siimit/main/scripts/install.sh | bash
