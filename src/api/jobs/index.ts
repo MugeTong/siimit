@@ -5,9 +5,9 @@ import { stopJob } from "./stop-job";
 import { submitJob } from "./submit-job";
 
 export const jobsApi = {
-  deleteJob,
-  getJob,
-  listJobs,
-  stopJob,
-  submitJob,
+    deleteJob,
+    getJob,
+    listJobs,
+    stopJob,
+    submitJob,
 };

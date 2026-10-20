@@ -3,33 +3,27 @@ import { projectsApi } from "@/api";
 import { prettyPrint } from "@/utils";
 
 async function projectsHandler(ctx: CommandContext): Promise<void> {
-  // Fetch the project list from the API
-  const data = await projectsApi.listProjects();
+    // Fetch the project list from the API
+    const data = await projectsApi.listProjects();
 
-  // Handle the results for better display
-  const results = data.map((project) => ({
-    ...project,
-  }));
+    // Handle the results for better display
+    const results = data.map((project) => ({
+        ...project,
+    }));
 
-  prettyPrint(results, ctx.flags.has("--json"), [
-    "id",
-    "name",
-    "priority",
-    "remain",
-    "myRemain",
-  ]);
+    prettyPrint(results, ctx.flags.has("--json"), ["id", "name", "priority", "remain", "myRemain"]);
 }
 
 export const projectsCommand: Command = {
-  name: "projects",
-  hidden: false,
-  short: "list projects participated in",
-  description: "List projects, available priorities, and point balances.",
-  aliases: [],
-  positionalNames: [],
-  valueOptions: {},
-  flagOptions: {
-    "--json": "output in JSON format",
-  },
-  run: projectsHandler,
+    name: "projects",
+    hidden: false,
+    short: "list projects participated in",
+    description: "List projects, available priorities, and point balances.",
+    aliases: [],
+    positionalNames: [],
+    valueOptions: {},
+    flagOptions: {
+        "--json": "output in JSON format",
+    },
+    run: projectsHandler,
 };

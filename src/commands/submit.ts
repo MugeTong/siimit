@@ -5,217 +5,190 @@ import { resolvePriority, PRIORITIES, type Priority } from "@/types";
 import { parseInteger, prettyPrint } from "@/utils";
 
 type TerminalValidationResult = {
-  name: string;
-  projectId: string;
-  imageName: string;
-  groupId: string;
-  quotaId: string;
-  priority: Priority;
-  command?: string;
-  commandFile?: string;
-  maxTime: number;
-  nodes: number;
+    name: string;
+    projectId: string;
+    imageName: string;
+    groupId: string;
+    quotaId: string;
+    priority: Priority;
+    command?: string;
+    commandFile?: string;
+    maxTime: number;
+    nodes: number;
 };
 
-async function validateParams(
-  ctx: CommandContext,
-): Promise<TerminalValidationResult> {
-  const name = ctx.args[0]!;
+async function validateParams(ctx: CommandContext): Promise<TerminalValidationResult> {
+    const name = ctx.args[0]!;
 
-  if (!ctx.params["--project"]) {
-    throw new Error("Missing required parameter: --project");
-  }
-  const projectId = ctx.params["--project"];
-
-  if (!ctx.params["--image"]) {
-    throw new Error("Missing required parameter: --image");
-  }
-  const imageName = ctx.params["--image"];
-
-  if (!ctx.params["--group"]) {
-    throw new Error("Missing required parameter: --group");
-  }
-  const groupId = ctx.params["--group"];
-
-  if (!ctx.params["--priority"]) {
-    throw new Error("Missing required parameter: --priority");
-  } else {
-    if (!PRIORITIES.includes(ctx.params["--priority"] as Priority)) {
-      throw new Error("Invalid priority value");
+    if (!ctx.params["--project"]) {
+        throw new Error("Missing required parameter: --project");
     }
-  }
-  const priority = resolvePriority(Number(ctx.params["--priority"]));
+    const projectId = ctx.params["--project"];
 
-  if (!ctx.params["--command"] && !ctx.params["--command-file"]) {
-    throw new Error(
-      "Missing required parameter: either --command or --command-file must be provided",
-    );
-  }
-  if (ctx.params["--command"] && ctx.params["--command-file"]) {
-    throw new Error(
-      "Invalid parameters: --command and --command-file cannot be used together",
-    );
-  }
-  if (
-    ctx.params["--command-file"] &&
-    !fs.existsSync(ctx.params["--command-file"])
-  ) {
-    throw new Error(
-      "FileNotFoundError: The specified command file does not exist",
-    );
-  }
-  const command = ctx.params["--command"];
-  const commandFile = ctx.params["--command-file"];
-
-  if (!ctx.params["--gpus"]) {
-    throw new Error("Missing required parameter: --gpus");
-  }
-  const gpus = parseInteger(ctx.params["--gpus"]);
-  if (gpus === undefined) {
-    throw new Error("Invalid value for --gpus, must be a positive integer");
-  }
-  // Detect if the gpus number is a valid option.
-  const quotaMap: Record<number, string> = await groupsApi.getQuotaMap(
-    groupId,
-    priority,
-  );
-  if (!quotaMap[gpus]) {
-    throw new Error(
-      [
-        `Invalid value for --gpus: ${gpus}. For`,
-        `Group: ${groupId}, Priority: ${priority}`,
-        `The available GPU counts are: ${Object.keys(quotaMap).join(", ")}`,
-      ].join("\n"),
-    );
-  }
-  const quotaId = quotaMap[gpus];
-
-  if (!ctx.params["--max-time"]) {
-    throw new Error("Missing required parameter: --max-time");
-  }
-  const factorMap: Record<string, number> = {
-    s: 1000,
-    m: 60000,
-    h: 3600000,
-    d: 86400000,
-  };
-  const timeUnit = ctx.params["--max-time"].slice(-1);
-  const timeValue = ctx.params["--max-time"].slice(0, -1);
-  if (!factorMap[timeUnit]) {
-    throw new Error(
-      "Invalid unit for --max-time, must end with 's', 'm', 'h', or 'd'",
-    );
-  }
-  let time = parseInteger(timeValue);
-  if (time !== undefined) {
-    if (time <= 0) {
-      throw new Error(
-        "Invalid value for --max-time, must be a positive integer",
-      );
+    if (!ctx.params["--image"]) {
+        throw new Error("Missing required parameter: --image");
     }
-  } else {
-    throw new Error(`Invalid value for --max-time, got ${timeValue}`);
-  }
-  const maxTime = time * factorMap[timeUnit];
+    const imageName = ctx.params["--image"];
 
-  let nodes: number | undefined = 1; // default value
-  if (ctx.params["--nodes"]) {
-    nodes = parseInteger(ctx.params["--nodes"]);
-    if (nodes !== undefined) {
-      if (nodes < 1) {
-        throw new Error(
-          "Invalid value for --nodes, must be a positive integer",
-        );
-      }
-      if (nodes > 1 && gpus !== 8) {
-        throw new Error("Set --nodes > 1 is only allowed when --gpus=8");
-      }
+    if (!ctx.params["--group"]) {
+        throw new Error("Missing required parameter: --group");
+    }
+    const groupId = ctx.params["--group"];
+
+    if (!ctx.params["--priority"]) {
+        throw new Error("Missing required parameter: --priority");
     } else {
-      throw new Error(
-        `Invalid value for --nodes, got ${ctx.params["--nodes"]}`,
-      );
+        if (!PRIORITIES.includes(ctx.params["--priority"] as Priority)) {
+            throw new Error("Invalid priority value");
+        }
     }
-  }
+    const priority = resolvePriority(Number(ctx.params["--priority"]));
 
-  return {
-    name,
-    projectId,
-    imageName,
-    groupId,
-    quotaId,
-    priority,
-    command,
-    commandFile,
-    maxTime,
-    nodes,
-  };
+    if (!ctx.params["--command"] && !ctx.params["--command-file"]) {
+        throw new Error(
+            "Missing required parameter: either --command or --command-file must be provided",
+        );
+    }
+    if (ctx.params["--command"] && ctx.params["--command-file"]) {
+        throw new Error("Invalid parameters: --command and --command-file cannot be used together");
+    }
+    if (ctx.params["--command-file"] && !fs.existsSync(ctx.params["--command-file"])) {
+        throw new Error("FileNotFoundError: The specified command file does not exist");
+    }
+    const command = ctx.params["--command"];
+    const commandFile = ctx.params["--command-file"];
+
+    if (!ctx.params["--gpus"]) {
+        throw new Error("Missing required parameter: --gpus");
+    }
+    const gpus = parseInteger(ctx.params["--gpus"]);
+    if (gpus === undefined) {
+        throw new Error("Invalid value for --gpus, must be a positive integer");
+    }
+    // Detect if the gpus number is a valid option.
+    const quotaMap: Record<number, string> = await groupsApi.getQuotaMap(groupId, priority);
+    if (!quotaMap[gpus]) {
+        throw new Error(
+            [
+                `Invalid value for --gpus: ${gpus}. For`,
+                `Group: ${groupId}, Priority: ${priority}`,
+                `The available GPU counts are: ${Object.keys(quotaMap).join(", ")}`,
+            ].join("\n"),
+        );
+    }
+    const quotaId = quotaMap[gpus];
+
+    if (!ctx.params["--max-time"]) {
+        throw new Error("Missing required parameter: --max-time");
+    }
+    const factorMap: Record<string, number> = {
+        s: 1000,
+        m: 60000,
+        h: 3600000,
+        d: 86400000,
+    };
+    const timeUnit = ctx.params["--max-time"].slice(-1);
+    const timeValue = ctx.params["--max-time"].slice(0, -1);
+    if (!factorMap[timeUnit]) {
+        throw new Error("Invalid unit for --max-time, must end with 's', 'm', 'h', or 'd'");
+    }
+    let time = parseInteger(timeValue);
+    if (time !== undefined) {
+        if (time <= 0) {
+            throw new Error("Invalid value for --max-time, must be a positive integer");
+        }
+    } else {
+        throw new Error(`Invalid value for --max-time, got ${timeValue}`);
+    }
+    const maxTime = time * factorMap[timeUnit];
+
+    let nodes: number | undefined = 1; // default value
+    if (ctx.params["--nodes"]) {
+        nodes = parseInteger(ctx.params["--nodes"]);
+        if (nodes !== undefined) {
+            if (nodes < 1) {
+                throw new Error("Invalid value for --nodes, must be a positive integer");
+            }
+            if (nodes > 1 && gpus !== 8) {
+                throw new Error("Set --nodes > 1 is only allowed when --gpus=8");
+            }
+        } else {
+            throw new Error(`Invalid value for --nodes, got ${ctx.params["--nodes"]}`);
+        }
+    }
+
+    return {
+        name,
+        projectId,
+        imageName,
+        groupId,
+        quotaId,
+        priority,
+        command,
+        commandFile,
+        maxTime,
+        nodes,
+    };
 }
 
 async function submitHandler(ctx: CommandContext): Promise<void> {
-  const params = await validateParams(ctx);
+    const params = await validateParams(ctx);
 
-  if (!ctx.flags.has("--yes")) {
-    if (!ctx.flags.has("--json")) {
-      console.log(
-        JSON.stringify({ validated: true, submitted: false }, null, 2),
-      );
-    } else {
-      console.log(
-        "Parameters validated successfully. Use the --yes flag to confirm submission.",
-      );
+    if (!ctx.flags.has("--yes")) {
+        if (!ctx.flags.has("--json")) {
+            console.log(JSON.stringify({ validated: true, submitted: false }, null, 2));
+        } else {
+            console.log(
+                "Parameters validated successfully. Use the --yes flag to confirm submission.",
+            );
+        }
+        return;
     }
-    return;
-  }
 
-  const data = await jobsApi.submitJob({
-    name: params.name,
-    projectId: params.projectId,
-    imageName: params.imageName,
-    groupId: params.groupId,
-    priority: params.priority,
-    command: params.command,
-    commandFile: params.commandFile,
-    quotaId: params.quotaId,
-    maxRunSeconds: params.maxTime,
-    nodeCount: params.nodes,
-  });
+    const data = await jobsApi.submitJob({
+        name: params.name,
+        projectId: params.projectId,
+        imageName: params.imageName,
+        groupId: params.groupId,
+        priority: params.priority,
+        command: params.command,
+        commandFile: params.commandFile,
+        quotaId: params.quotaId,
+        maxRunSeconds: params.maxTime,
+        nodeCount: params.nodes,
+    });
 
-  // Handle the results for better display
-  const results = {
-    ...data,
-    status: data.status.toUpperCase(),
-  };
+    // Handle the results for better display
+    const results = {
+        ...data,
+        status: data.status.toUpperCase(),
+    };
 
-  // Output the results
-  prettyPrint(results, ctx.flags.has("--json"), [
-    "jobId",
-    "name",
-    "status",
-    "priority",
-  ]);
+    // Output the results
+    prettyPrint(results, ctx.flags.has("--json"), ["jobId", "name", "status", "priority"]);
 }
 
 export const submitCommand: Command = {
-  name: "submit",
-  hidden: false,
-  short: "submit a job",
-  description: "Submit a job with the specified parameters.",
-  aliases: ["create"],
-  positionalNames: ["<job-name>"],
-  valueOptions: {
-    "--project": "project Id",
-    "--image": "name of the image to use",
-    "--group": "computation group Id",
-    "--priority": "job priority level",
-    "--command": "command to execute for the job",
-    "--command-file": "path to a file to execute using bash",
-    "--gpus": "number of GPUs per node: 1, 2, 4, 8",
-    "--max-time": "maximum time to run (e.g. 60s, 10m, 2h, 1d)",
-    "--nodes": "number of nodes used (default: 1)",
-  },
-  flagOptions: {
-    "--json": "output in JSON format",
-    "--yes": "job will be submitted only when this flag is set",
-  },
-  run: submitHandler,
+    name: "submit",
+    hidden: false,
+    short: "submit a job",
+    description: "Submit a job with the specified parameters.",
+    aliases: ["create"],
+    positionalNames: ["<job-name>"],
+    valueOptions: {
+        "--project": "project Id",
+        "--image": "name of the image to use",
+        "--group": "computation group Id",
+        "--priority": "job priority level",
+        "--command": "command to execute for the job",
+        "--command-file": "path to a file to execute using bash",
+        "--gpus": "number of GPUs per node: 1, 2, 4, 8",
+        "--max-time": "maximum time to run (e.g. 60s, 10m, 2h, 1d)",
+        "--nodes": "number of nodes used (default: 1)",
+    },
+    flagOptions: {
+        "--json": "output in JSON format",
+        "--yes": "job will be submitted only when this flag is set",
+    },
+    run: submitHandler,
 };
