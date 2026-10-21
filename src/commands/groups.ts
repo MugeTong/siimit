@@ -1,8 +1,10 @@
-import type { Command, CommandContext } from "./types";
+import { Command, Ref } from "@/utils";
 import { groupsApi } from "@/api";
 import { prettyPrint } from "@/utils";
 
-async function groupsHandler(ctx: CommandContext): Promise<void> {
+const jsonFlag = new Ref(false);
+
+async function groupsHandler(self: Command): Promise<void> {
     // Fetch the group list from the API
     const data = await groupsApi.listGroups();
 
@@ -11,25 +13,17 @@ async function groupsHandler(ctx: CommandContext): Promise<void> {
         ...group,
     }));
 
-    prettyPrint(results, ctx.flags.has("--json"), [
-        "groupId",
-        "name",
-        "free",
-        "lowPriUsed",
-        "gpuTotal",
-    ]);
+    prettyPrint(results, jsonFlag.value, ["groupId", "name", "free", "lowPriUsed", "gpuTotal"]);
 }
 
-export const groupsCommand: Command = {
+const groupsCommand = new Command({
     name: "groups",
-    hidden: false,
     short: "list computation groups",
-    description: "List all available computation groups and their usage.",
+    long: "List all available computation groups and their usage.",
     aliases: [],
-    positionalNames: [],
-    valueOptions: {},
-    flagOptions: {
-        "--json": "output in JSON format",
-    },
     run: groupsHandler,
-};
+});
+
+groupsCommand.setFlag(jsonFlag, "json", "j", "output in JSON format");
+
+export { groupsCommand };

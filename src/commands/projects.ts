@@ -1,8 +1,10 @@
-import type { Command, CommandContext } from "./types";
+import { Command, Ref } from "@/utils";
 import { projectsApi } from "@/api";
 import { prettyPrint } from "@/utils";
 
-async function projectsHandler(ctx: CommandContext): Promise<void> {
+const jsonFlag = new Ref(false);
+
+async function projectsHandler(self: Command): Promise<void> {
     // Fetch the project list from the API
     const data = await projectsApi.listProjects();
 
@@ -11,19 +13,17 @@ async function projectsHandler(ctx: CommandContext): Promise<void> {
         ...project,
     }));
 
-    prettyPrint(results, ctx.flags.has("--json"), ["id", "name", "priority", "remain", "myRemain"]);
+    prettyPrint(results, jsonFlag.value, ["id", "name", "priority", "remain", "myRemain"]);
 }
 
-export const projectsCommand: Command = {
+const projectsCommand = new Command({
     name: "projects",
-    hidden: false,
     short: "list projects participated in",
-    description: "List projects, available priorities, and point balances.",
+    long: "List projects, available priorities, and point balances.",
     aliases: [],
-    positionalNames: [],
-    valueOptions: {},
-    flagOptions: {
-        "--json": "output in JSON format",
-    },
     run: projectsHandler,
-};
+});
+
+projectsCommand.setFlag(jsonFlag, "json", "j", "output in JSON format");
+
+export { projectsCommand };

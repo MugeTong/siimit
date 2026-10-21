@@ -1,29 +1,29 @@
-import type { Command, CommandContext } from "./types";
+import { Command, Ref } from "@/utils";
 import { imagesApi } from "@/api";
 import { prettyPrint } from "@/utils";
 
-async function imagesHandler(ctx: CommandContext): Promise<void> {
+const jsonFlag = new Ref(false);
+
+async function imagesHandler(self: Command): Promise<void> {
     // Fetch the image list from the API
-    const data = await imagesApi.lsitImages();
+    const data = await imagesApi.listImages();
 
     // Handle the results for better display
     const results = data.map((image) => ({
         ...image,
     }));
 
-    prettyPrint(results, ctx.flags.has("--json"), ["name", "status"]);
+    prettyPrint(results, jsonFlag.value, ["name", "status"]);
 }
 
-export const imagesCommand: Command = {
+const imagesCommand = new Command({
     name: "images",
-    hidden: false,
     short: "list available images",
-    description: "List all available images and their statuses.",
+    long: "List all available images and their statuses.",
     aliases: [],
-    positionalNames: [],
-    valueOptions: {},
-    flagOptions: {
-        "--json": "output in JSON format",
-    },
     run: imagesHandler,
-};
+});
+
+imagesCommand.setFlag(jsonFlag, "json", "j", "output in JSON format");
+
+export { imagesCommand };

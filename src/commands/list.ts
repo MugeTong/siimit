@@ -1,33 +1,33 @@
-import type { Command, CommandContext } from "./types";
+import { Command, Ref } from "@/utils";
 import { jobsApi } from "@/api";
-import { parseInteger, prettyPrint, timestamp2date } from "@/utils";
+import { prettyPrint, timestamp2date } from "@/utils";
 import { isJobStatus, JOB_STATUSES } from "@/types";
 
-async function listHandler(ctx: CommandContext): Promise<void> {
+const limitOption = new Ref(-1);
+const keywordOption = new Ref("");
+const statusOption = new Ref("");
+const jsonFlag = new Ref(false);
+
+async function listHandler(self: Command): Promise<void> {
     // Parameter validation
     let limit;
-    if (ctx.params["--limit"]) {
-        limit = parseInteger(ctx.params["--limit"]);
-        if (limit === undefined) {
-            throw new Error(`Limit must be an integer, got '${ctx.params["--limit"]}'`);
-        }
-        if (limit < 1 || limit > 5000) {
-            throw new Error("Job limit must be between 1 and 5000");
-        }
+    if (!Number.isInteger(limitOption.value) || limitOption.value < 1 || limitOption.value > 5000) {
+        throw new Error("Job limit must be an integer between 1 and 5000");
+    } else {
+        limit = limitOption.value;
     }
 
     let status;
-    if (ctx.params["--status"]) {
-        if (!isJobStatus(ctx.params["--status"])) {
-            throw new Error(`Invalid job status: '${ctx.params["--status"]}'`);
-        }
-        status = ctx.params["--status"];
+    if (!isJobStatus(statusOption.value)) {
+        throw new Error(`Invalid job status for filtering: '${statusOption.value}'`);
+    } else {
+        status = statusOption.value;
     }
 
     // Fetch the job list from the API
     const data = await jobsApi.listJobs({
-        keyword: ctx.params["--keyword"],
-        status: status,
+        keyword: keywordOption.value,
+        status: statusOption.value,
         limit: limit,
     });
 
@@ -39,7 +39,7 @@ async function listHandler(ctx: CommandContext): Promise<void> {
     }));
 
     // Output the results
-    prettyPrint(results, ctx.flags.has("--json"), [
+    prettyPrint(results, jsonFlag.value, [
         "jobId",
         "name",
         "status",
@@ -49,20 +49,29 @@ async function listHandler(ctx: CommandContext): Promise<void> {
     ]);
 }
 
-export const listCommand: Command = {
+const listCommand = new Command({
     name: "list",
-    hidden: false,
     short: "list job queues",
-    description: "List all job queues and their statuses.",
+    long: "List all job queues and their statuses.",
     aliases: ["ls"],
-    positionalNames: [],
-    valueOptions: {
-        "--limit": "number of jobs displayed (default: 10)",
-        "--keyword": "filter by a keyword in name or job ID",
-        "--status": `filter by status: ${JOB_STATUSES.join(", ")}`,
-    },
-    flagOptions: {
-        "--json": "output in JSON format",
-    },
     run: listHandler,
-};
+});
+
+listCommand.setOption(limitOption, "limit", "l", 10, "number of jobs displayed");
+listCommand.setOption(
+    keywordOption,
+    "keyword",
+    "k",
+    undefined,
+    "filter by a keyword in name or job ID",
+);
+listCommand.setOption(
+    statusOption,
+    "status",
+    undefined,
+    undefined,
+    `filter by status: ${JOB_STATUSES.join(", ")}`,
+);
+listCommand.setFlag(jsonFlag, "json", "j", "output in JSON format");
+
+export { listCommand };

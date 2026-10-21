@@ -1,21 +1,22 @@
-import type { Command, CommandContext } from "./types";
+import { Command, Ref } from "@/utils";
 import { jobsApi } from "@/api";
 
-async function stopHandler(ctx: CommandContext): Promise<void> {
-    const jobId: string = ctx.args[0]!;
-    await jobsApi.stopJob(jobId);
+const jobId = new Ref("");
 
-    console.log(`Job ${jobId} stop request submitted successfully.`);
+async function stopHandler(self: Command): Promise<void> {
+    await jobsApi.stopJob(jobId.value);
+
+    console.log(`Job ${jobId.value} stop request submitted successfully.`);
 }
 
-export const stopCommand: Command = {
+const stopCommand = new Command({
     name: "stop",
-    hidden: false,
     short: "stop a job by ID",
-    description: "Stop a job by its ID.",
+    long: "Stop a job by its ID.",
     aliases: ["cancel"],
-    positionalNames: ["<job-id>"],
-    valueOptions: {},
-    flagOptions: {},
     run: stopHandler,
-};
+});
+
+stopCommand.setPos(jobId, "job-id");
+
+export { stopCommand };

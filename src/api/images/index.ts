@@ -18,7 +18,7 @@ type ListImagesResponse = ServiceResponse<{
     total: number;
 }>;
 
-async function lsitImages(): Promise<Array<ImageMetadata>> {
+async function listImages(): Promise<Array<ImageMetadata>> {
     const token = await authStorage.load();
     const endpoint = await discoveryStorage.load("image");
     const url = new URL(endpoint, "https://qz.sii.edu.cn");
@@ -52,5 +52,5 @@ async function lsitImages(): Promise<Array<ImageMetadata>> {
 }
 
 export const imagesApi = {
-    lsitImages,
+    listImages,
 };

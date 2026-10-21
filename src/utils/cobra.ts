@@ -1,28 +1,8 @@
-type CommandConfig = {
-    name: string;
-    version?: string;
-    aliases?: string[];
-    short: string;
-    long: string;
-    commands?: Command[];
-    run: (self: Command) => Promise<void>;
-};
+// cobra.ts
+// Copyright (c) 2026 MugeTong. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
 
-interface Command {
-    setPos<T extends string>(variable: Ref<T>, name: string): Command;
-    setOption<T extends string | number>(
-        variable: Ref<T>,
-        name: string,
-        short?: string,
-        defaultValue?: T,
-        description?: string,
-    ): Command;
-    setFlag(variable: Ref<boolean>, name: string, short?: string, description?: string): Command;
-    help(): void;
-    execute(argv?: string[]): Promise<void>;
-}
-
-class Command {
+export class Command {
     private parent: Command | null = null;
 
     private poses: Array<[string, Ref<string>]> = [];
@@ -65,22 +45,30 @@ class Command {
         const hasPoses = this.poses.length > 0;
         const hasOptions = Object.keys(this.options).length > 0;
         const hasFlags = Object.keys(this.flags).length > 0;
-        const hasCommands = this.conf.commands && this.conf.commands.length > 0;
 
         return (
             `${this.fullPath} ` +
             `${hasPoses ? this.poses.map(([name]) => `<${name}>`).join(" ") + " " : ""}` +
             `${hasOptions ? "[options] " : ""}` +
-            `${hasFlags ? "[flags] " : ""}` +
-            `${hasCommands ? "[command]" : ""}`
+            `${hasFlags ? "[flags]" : ""}`
         );
     }
 
-    constructor(private readonly conf: CommandConfig) {
+    constructor(
+        private readonly conf: {
+            name: string;
+            version?: string;
+            aliases?: string[];
+            short: string;
+            long: string;
+            commands?: Command[];
+            run: (self: Command) => Promise<void>;
+        },
+    ) {
+        this.setFlag(new Ref(true), "help", "h", "show help information");
         if (conf.version) {
             this.setFlag(new Ref(true), "version", "v", "show version information");
         }
-        this.setFlag(new Ref(true), "help", "h", "show help information");
 
         if (conf.commands) {
             for (const cmd of conf.commands) {
@@ -191,10 +179,10 @@ class Command {
             const printObject: Array<[string, string]> = Object.entries(this.options)
                 .filter(([, value]) => !value.isShort)
                 .map(([key, value]) => {
-                    let option = `--${key}${typeof value.state.variable.value === "number" ? " <number>" : " <string>"}`;
-                    if (value.state.shortName) {
-                        option = `-${value.state.shortName}, ${option}`;
-                    }
+                    const shortName = value.state.shortName ? `-${value.state.shortName}, ` : "    ";
+                    const valueType = typeof value.state.variable.value === "number" ? " number" : " string";
+                    const option = `${shortName}--${key}${valueType}`;
+
                     let description = value.state.description || "no description available";
                     if (value.state.defaultValue !== undefined) {
                         description += ` (default: ${value.state.defaultValue})`;
@@ -213,7 +201,7 @@ class Command {
             const printObject: Array<[string, string]> = Object.entries(this.flags)
                 .filter(([, value]) => !value.isShort)
                 .map(([key, value]) => [
-                    value.state.shortName ? `-${value.state.shortName}, --${key}` : `--${key}`,
+                    value.state.shortName ? `-${value.state.shortName}, --${key}` : `    --${key}`,
                     value.state.description || "no description available",
                 ]);
             const maxLen = Math.max(...printObject.map((item) => item[0].length));
@@ -224,7 +212,7 @@ class Command {
 
         if (hasCommands) {
             console.log(
-                `Use "${this.fullPath} [command] --help" for more information about a command.`,
+                `\nUse "${this.fullPath} [command] --help" for more information about a command.`,
             );
         }
     }
@@ -347,11 +335,6 @@ class Command {
     }
 }
 
-class Ref<T extends string | number | boolean> {
+export class Ref<T extends string | number | boolean> {
     constructor(public value: T) {}
 }
-
-export const cobra = {
-    Command: (conf: CommandConfig) => new Command(conf),
-    Ref: <T extends string | number | boolean>(value: T) => new Ref<T>(value),
-};

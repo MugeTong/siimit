@@ -1,19 +1,17 @@
-import type { Command } from "./types";
+import { Command } from "@/utils";
 import { authStorage } from "@/storage";
 
-async function logoutHandler(): Promise<void> {
+async function logoutHandler(self: Command): Promise<void> {
     await authStorage.clear();
     console.log("Logged out successfully.");
 }
 
-export const logoutCommand: Command = {
+const logoutCommand = new Command({
     name: "logout",
-    hidden: false,
     short: "log out of the service",
-    description: "Log out and clear authentication data.",
+    long: "Log out and clear authentication data.",
     aliases: ["signout"],
-    positionalNames: [],
-    valueOptions: {},
-    flagOptions: {},
     run: logoutHandler,
-};
+});
+
+export { logoutCommand };

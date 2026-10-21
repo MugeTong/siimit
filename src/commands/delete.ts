@@ -1,21 +1,22 @@
-import type { Command, CommandContext } from "./types";
+import { Command, Ref } from "@/utils";
 import { jobsApi } from "@/api";
 
-async function deleteHandler(ctx: CommandContext): Promise<void> {
-    const jobId: string = ctx.args[0]!;
-    await jobsApi.deleteJob(jobId);
+const jobId = new Ref("");
 
-    console.log(`Job ${jobId} deleted successfully.`);
+async function deleteHandler(self: Command): Promise<void> {
+    await jobsApi.deleteJob(jobId.value);
+
+    console.log(`Job ${jobId.value} deleted successfully.`);
 }
 
-export const deleteCommand: Command = {
+const deleteCommand = new Command({
     name: "delete",
-    hidden: false,
     short: "delete a job by ID",
-    description: "Delete a job by its ID.",
+    long: "Delete a job by its ID.",
     aliases: ["remove"],
-    positionalNames: ["<job-id>"],
-    valueOptions: {},
-    flagOptions: {},
     run: deleteHandler,
-};
+});
+
+deleteCommand.setPos(jobId, "job-id");
+
+export { deleteCommand };

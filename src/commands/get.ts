@@ -1,10 +1,12 @@
-import type { Command, CommandContext } from "./types";
+import { Command, Ref } from "@/utils";
 import { jobsApi } from "@/api";
 import { prettyPrint, timestamp2date } from "@/utils";
 
-async function listHandler(ctx: CommandContext): Promise<void> {
-    const jobId: string = ctx.args[0]!;
-    const data = await jobsApi.getJob(jobId);
+const jobId = new Ref("");
+const jsonFlag = new Ref(false);
+
+async function getHandler(self: Command): Promise<void> {
+    const data = await jobsApi.getJob(jobId.value);
 
     // Handle the results for better display
     const result = {
@@ -15,7 +17,7 @@ async function listHandler(ctx: CommandContext): Promise<void> {
     };
 
     // Output the results
-    prettyPrint(result, ctx.flags.has("--json"), [
+    prettyPrint(result, jsonFlag.value, [
         "jobId",
         "name",
         "status",
@@ -26,16 +28,15 @@ async function listHandler(ctx: CommandContext): Promise<void> {
     ]);
 }
 
-export const getCommand: Command = {
+const getCommand = new Command({
     name: "get",
-    hidden: false,
     short: "get job details by job ID",
-    description: "Get job details by job ID.",
+    long: "Get job details by job ID.",
     aliases: [],
-    positionalNames: ["<job-id>"],
-    valueOptions: {},
-    flagOptions: {
-        "--json": "Output in JSON format",
-    },
-    run: listHandler,
-};
+    run: getHandler,
+});
+
+getCommand.setPos(jobId, "job-id");
+getCommand.setFlag(jsonFlag, "json", "j", "output in JSON format");
+
+export { getCommand };

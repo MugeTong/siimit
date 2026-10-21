@@ -1,8 +1,8 @@
-import type { Command } from "./types";
+import { Command } from "@/utils";
 import { authApi } from "@/api";
 import { authStorage } from "@/storage";
 
-async function loginHandler(): Promise<void> {
+async function loginHandler(self: Command): Promise<void> {
     const data = await authApi.requestDeviceCode();
     console.log("\nPlease visit the following URL and enter the code to authenticate:\n");
     console.log(`    URL: ${data.verification_uri}`);
@@ -25,14 +25,12 @@ async function loginHandler(): Promise<void> {
     console.log(`\nLogged in successfully!`);
 }
 
-export const loginCommand: Command = {
+const loginCommand = new Command({
     name: "login",
-    hidden: false,
     short: "log in to use the service",
-    description: "Authenticate and log in to the service.",
+    long: "Authenticate and log in to the service.",
     aliases: ["signin"],
-    positionalNames: [],
-    valueOptions: {},
-    flagOptions: {},
     run: loginHandler,
-};
+});
+
+export { loginCommand };
