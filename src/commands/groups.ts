@@ -24,6 +24,10 @@ const groupsCommand = new Command({
     run: groupsHandler,
 });
 
-groupsCommand.setFlag(jsonFlag, "json", "j", "output in JSON format");
+groupsCommand.setFlag(jsonFlag, {
+    name: "json",
+    shortName: "j",
+    description: "output in JSON format",
+});
 
 export { groupsCommand };

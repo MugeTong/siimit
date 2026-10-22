@@ -24,6 +24,10 @@ const imagesCommand = new Command({
     run: imagesHandler,
 });
 
-imagesCommand.setFlag(jsonFlag, "json", "j", "output in JSON format");
+imagesCommand.setFlag(jsonFlag, {
+    name: "json",
+    shortName: "j",
+    description: "output in JSON format",
+});
 
 export { imagesCommand };

@@ -24,6 +24,10 @@ const projectsCommand = new Command({
     run: projectsHandler,
 });
 
-projectsCommand.setFlag(jsonFlag, "json", "j", "output in JSON format");
+projectsCommand.setFlag(jsonFlag, {
+    name: "json",
+    shortName: "j",
+    description: "output in JSON format",
+});
 
 export { projectsCommand };

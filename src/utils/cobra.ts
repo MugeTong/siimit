@@ -2,6 +2,10 @@
 // Copyright (c) 2026 MugeTong. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+export class Ref<T extends string | number | boolean> {
+    constructor(public value: T) {}
+}
+
 export class Command {
     private parent: Command | null = null;
 
@@ -10,12 +14,13 @@ export class Command {
         string,
         {
             isShort: boolean;
+            required: boolean;
             state: {
                 variable: Ref<string | number>;
                 valueSet: boolean;
                 shortName?: string;
                 defaultValue?: string | number;
-                description?: string;
+                description: string;
             };
         }
     > = {};
@@ -26,7 +31,7 @@ export class Command {
             state: {
                 variable: Ref<boolean>;
                 shortName?: string;
-                description?: string;
+                description: string;
             };
         }
     > = {};
@@ -65,9 +70,17 @@ export class Command {
             run: (self: Command) => Promise<void>;
         },
     ) {
-        this.setFlag(new Ref(true), "help", "h", "show help information");
+        this.setFlag(new Ref(false), {
+            name: "help",
+            shortName: "h",
+            description: "show help information",
+        });
         if (conf.version) {
-            this.setFlag(new Ref(true), "version", "v", "show version information");
+            this.setFlag(new Ref(false), {
+                name: "version",
+                shortName: "v",
+                description: "show version information",
+            });
         }
 
         if (conf.commands) {
@@ -77,41 +90,56 @@ export class Command {
         }
     }
 
-    setPos<T extends string>(variable: Ref<T>, name: string): Command {
-        // Implementation for setting a positional argument
-        this.poses.push([name, variable]);
+    setPos<T extends string>(
+        variable: Ref<T>,
+        conf: {
+            name: string;
+        },
+    ): Command {
+        this.poses.push([conf.name, variable]);
         return this;
     }
 
     setOption<T extends string | number>(
         variable: Ref<T>,
-        name: string,
-        shortName?: string,
-        defaultValue?: T,
-        description?: string,
+        conf: {
+            name: string;
+            shortName?: string;
+            required: boolean;
+            defaultValue?: T;
+            description: string;
+        },
     ): Command {
-        // Implementation for setting an option
+        // Validate the configuration
+        if (conf.required && conf.defaultValue !== undefined) {
+            throw new Error(
+                `Option '${conf.name}' as required option cannot have a default value.`,
+            );
+        }
+
         const sharedState = {
             variable,
             valueSet: false,
-            shortName,
-            defaultValue,
-            description,
+            shortName: conf.shortName,
+            defaultValue: conf.defaultValue,
+            description: conf.description,
         };
-        this.options[name] = {
+        this.options[conf.name] = {
             isShort: false,
+            required: conf.required,
             state: sharedState,
         };
-        if (shortName) {
-            this.options[shortName] = {
+        if (conf.shortName) {
+            this.options[conf.shortName] = {
                 isShort: true,
+                required: conf.required,
                 state: sharedState,
             };
         }
 
-        // Set the default value of the option if provided
-        if (defaultValue !== undefined) {
-            variable.value = defaultValue;
+        // Set the default value for the option if provided
+        if (conf.defaultValue !== undefined) {
+            variable.value = conf.defaultValue;
             sharedState.valueSet = true;
         }
         return this;
@@ -119,27 +147,28 @@ export class Command {
 
     setFlag(
         variable: Ref<boolean>,
-        name: string,
-        shortName?: string,
-        description?: string,
+        conf: {
+            name: string;
+            shortName?: string;
+            description: string;
+        },
     ): Command {
-        // Implementation for setting a flag
         const sharedState = {
             variable,
-            shortName,
-            description,
+            shortName: conf.shortName,
+            description: conf.description,
         };
-        this.flags[name] = {
+        this.flags[conf.name] = {
             isShort: false,
             state: sharedState,
         };
-        if (shortName) {
-            this.flags[shortName] = {
+        if (conf.shortName) {
+            this.flags[conf.shortName] = {
                 isShort: true,
                 state: sharedState,
             };
         }
-        // Set the default value of the flag to false
+        // Set the default value for the flag to false
         variable.value = false;
 
         return this;
@@ -151,7 +180,6 @@ export class Command {
         const hasOptions = Object.keys(this.options).length > 0;
         const hasFlags = Object.keys(this.flags).length > 0;
 
-        // Implementation for displaying help information
         console.log(`${this.conf.long}`);
 
         console.log("\nUsage:");
@@ -174,24 +202,35 @@ export class Command {
         }
 
         if (hasOptions) {
-            console.log("\nOptions:");
-            // Display options
-            const printObject: Array<[string, string]> = Object.entries(this.options)
+            const printObject: Array<[boolean, string, string]> = Object.entries(this.options)
                 .filter(([, value]) => !value.isShort)
                 .map(([key, value]) => {
-                    const shortName = value.state.shortName ? `-${value.state.shortName}, ` : "    ";
-                    const valueType = typeof value.state.variable.value === "number" ? " number" : " string";
-                    const option = `${shortName}--${key}${valueType}`;
-
-                    let description = value.state.description || "no description available";
+                    const sn = value.state.shortName ? `-${value.state.shortName}, ` : "    ";
+                    const vt = typeof value.state.variable.value === "string" ? "string" : "number";
+                    let option = `${sn}--${key} ${vt}`;
+                    let desc = value.state.description || "no description available";
                     if (value.state.defaultValue !== undefined) {
-                        description += ` (default: ${value.state.defaultValue})`;
+                        desc += ` (default: ${value.state.defaultValue})`;
                     }
-                    return [option, description];
+                    return [value.required, option, desc];
                 });
-            const maxLen = Math.max(...printObject.map((item) => item[0].length));
-            for (const [option, description] of printObject) {
-                console.log(`  ${option.padEnd(maxLen)}  ${description}`);
+            const requiredOptions = printObject.filter(([required]) => required);
+            const availableOptions = printObject.filter(([required]) => !required);
+
+            if (requiredOptions.length > 0) {
+                console.log("\nRequired Options:");
+                const maxLen = Math.max(...requiredOptions.map((item) => item[1].length));
+                for (const [, option, description] of requiredOptions) {
+                    console.log(`  ${option.padEnd(maxLen)}  ${description}`);
+                }
+            }
+
+            if (availableOptions.length > 0) {
+                console.log("\nAvailable Options:");
+                const maxLen = Math.max(...availableOptions.map((item) => item[1].length));
+                for (const [, option, description] of availableOptions) {
+                    console.log(`  ${option.padEnd(maxLen)}  ${description}`);
+                }
             }
         }
 
@@ -224,11 +263,6 @@ export class Command {
         let index = 0;
         let poseIndex = 0;
         if (cmdArgs.length > 0) {
-            // Parse the `-h` or `--help` flag if present
-            if (cmdArgs[0] === "--help" || cmdArgs[0] === "-h") {
-                this.help();
-                return;
-            }
             // Parse the `-v` or `--version` flag if present
             if ((cmdArgs[0] === "--version" || cmdArgs[0] === "-v") && this.conf.version) {
                 console.log(`${this.fullPath} version ${this.conf.version}`);
@@ -246,6 +280,13 @@ export class Command {
                 if (subCommand) {
                     return await subCommand.execute(cmdArgs.slice(1));
                 }
+            }
+
+            // Handle help flags in any position before validating arguments or
+            // executing the command.
+            if (cmdArgs.includes("--help") || cmdArgs.includes("-h")) {
+                this.help();
+                return;
             }
 
             // Handle positional arguments and options/flags
@@ -270,7 +311,7 @@ export class Command {
                     const name = arg.replace(/^-+/, "");
                     if (this.options[name]) {
                         // This is an option with a value
-                        const value = cmdArgs[index + 1]!;
+                        const value = cmdArgs[index + 1];
                         if (value === undefined) {
                             throw new Error(`Missing value for option ${arg}`);
                         }
@@ -297,27 +338,18 @@ export class Command {
                         }
 
                         index += 2; // Skip the next argument since it's a value
+                        continue;
                     } else if (this.flags[name]) {
                         // This is a flag
                         this.flags[name].state.variable.value = true;
                         index++;
+                        continue;
                     } else {
                         throw new Error(
                             `Unknown option or flag: ${arg}\n\n` + `Usage: ${this.usageString}`,
                         );
                     }
                 }
-            }
-        }
-
-        // Check if all required options have been set
-        for (const [name, option] of Object.entries(this.options)) {
-            if (option.isShort) {
-                // Skip short options, they are handled by their long counterparts
-                continue;
-            }
-            if (!option.state.valueSet) {
-                throw new Error(`Missing required option: --${name}`);
             }
         }
 
@@ -330,11 +362,21 @@ export class Command {
             );
         }
 
+        // Check if all required options have been set
+        for (const [name, option] of Object.entries(this.options)) {
+            if (option.isShort) {
+                // Skip short options
+                continue;
+            }
+
+            if (option.required && !option.state.valueSet) {
+                throw new Error(
+                    `Missing required option: --${name}\n\n` + `Usage: ${this.usageString}`,
+                );
+            }
+        }
+
         // Execute the command's run function
         await this.conf.run(this);
     }
-}
-
-export class Ref<T extends string | number | boolean> {
-    constructor(public value: T) {}
 }

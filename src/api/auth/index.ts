@@ -38,7 +38,9 @@ async function requestDeviceCode(): Promise<DeviceCodeResponse> {
     });
     if (!response.ok) {
         const errorData = (await response.json()) as OAuthError;
-        throw new Error(`Failed to request device code: ${response.status} - ${errorData.error}`);
+        throw new Error(
+            `Failed to request device code: ${response.status} - ${errorData.error}: ${errorData.error_description}`,
+        );
     }
     const data = (await response.json()) as DeviceCodeResponse;
     return data;
@@ -73,7 +75,9 @@ async function pollForAuth(
                 await new Promise((resolve) => setTimeout(resolve, interval * 1000));
                 continue;
             }
-            throw new Error(`Failed to poll for token: ${response.status} - ${errorData.error}`);
+            throw new Error(
+                `Failed to poll for token: ${response.status} - ${errorData.error}: ${errorData.error_description}`,
+            );
         }
         const data = (await response.json()) as OAuthTokenResponse;
         return data;
@@ -99,7 +103,9 @@ async function refreshAuth(refreshToken: string): Promise<OAuthTokenResponse> {
     });
     if (!response.ok) {
         const errorData = (await response.json()) as OAuthError;
-        throw new Error(`Failed to refresh token: ${response.status} - ${errorData.error}`);
+        throw new Error(
+            `Failed to refresh token: ${response.status} - ${errorData.error}: ${errorData.error_description}`,
+        );
     }
     const data = (await response.json()) as OAuthTokenResponse;
     return data;

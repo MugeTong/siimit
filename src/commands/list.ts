@@ -18,7 +18,7 @@ async function listHandler(self: Command): Promise<void> {
     }
 
     let status;
-    if (!isJobStatus(statusOption.value)) {
+    if (statusOption.value !== "" && !isJobStatus(statusOption.value)) {
         throw new Error(`Invalid job status for filtering: '${statusOption.value}'`);
     } else {
         status = statusOption.value;
@@ -26,8 +26,8 @@ async function listHandler(self: Command): Promise<void> {
 
     // Fetch the job list from the API
     const data = await jobsApi.listJobs({
-        keyword: keywordOption.value,
-        status: statusOption.value,
+        keyword: keywordOption.value === "" ? undefined : keywordOption.value,
+        status: statusOption.value === "" ? undefined : statusOption.value,
         limit: limit,
     });
 
@@ -57,21 +57,27 @@ const listCommand = new Command({
     run: listHandler,
 });
 
-listCommand.setOption(limitOption, "limit", "l", 10, "number of jobs displayed");
-listCommand.setOption(
-    keywordOption,
-    "keyword",
-    "k",
-    undefined,
-    "filter by a keyword in name or job ID",
-);
-listCommand.setOption(
-    statusOption,
-    "status",
-    undefined,
-    undefined,
-    `filter by status: ${JOB_STATUSES.join(", ")}`,
-);
-listCommand.setFlag(jsonFlag, "json", "j", "output in JSON format");
+listCommand.setOption(limitOption, {
+    name: "limit",
+    required: false,
+    defaultValue: 10,
+    description: "number of jobs displayed",
+});
+listCommand.setOption(keywordOption, {
+    name: "keyword",
+    required: false,
+    description: "filter by a keyword in name or job ID",
+});
+listCommand.setOption(statusOption, {
+    name: "status",
+    required: false,
+    description: `filter by status: ${JOB_STATUSES.join(", ")}`,
+});
+
+listCommand.setFlag(jsonFlag, {
+    name: "json",
+    shortName: "j",
+    description: "output in JSON format",
+});
 
 export { listCommand };

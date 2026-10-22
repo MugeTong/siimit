@@ -30,7 +30,7 @@ type SubmitJobParams = {
     command?: string;
     commandFile?: string;
     quotaId: string;
-    priority: string;
+    priority: number;
     maxRunSeconds: number;
     nodeCount: number;
 };
@@ -62,7 +62,7 @@ export async function submitJob(params: SubmitJobParams): Promise<JobResult> {
                 },
             ],
             command: params.command ?? `bash ${params.commandFile}`,
-            task_priority: params.priority === "high" ? 4 : 1,
+            task_priority: params.priority,
         }),
         method: "POST",
     });

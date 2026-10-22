@@ -17,6 +17,8 @@ const deleteCommand = new Command({
     run: deleteHandler,
 });
 
-deleteCommand.setPos(jobId, "job-id");
+deleteCommand.setPos(jobId, {
+    name: "job-id",
+});
 
 export { deleteCommand };

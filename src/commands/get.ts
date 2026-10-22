@@ -36,7 +36,13 @@ const getCommand = new Command({
     run: getHandler,
 });
 
-getCommand.setPos(jobId, "job-id");
-getCommand.setFlag(jsonFlag, "json", "j", "output in JSON format");
+getCommand.setPos(jobId, {
+    name: "job-id",
+});
+getCommand.setFlag(jsonFlag, {
+    name: "json",
+    shortName: "j",
+    description: "output in JSON format",
+});
 
 export { getCommand };

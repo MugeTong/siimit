@@ -1,141 +1,85 @@
-import type { Command, CommandContext } from "./types";
+import { Command, Ref } from "@/utils";
 import fs from "fs";
 import { groupsApi, jobsApi } from "@/api";
-import { resolvePriority, PRIORITIES, type Priority } from "@/types";
-import { parseInteger, prettyPrint } from "@/utils";
+import { PRIORITIES, type Priority, toPriorityNumber } from "@/types";
+import { prettyPrint } from "@/utils";
 
-type TerminalValidationResult = {
-    name: string;
-    projectId: string;
-    imageName: string;
-    groupId: string;
-    quotaId: string;
-    priority: Priority;
-    command?: string;
-    commandFile?: string;
-    maxTime: number;
-    nodes: number;
-};
+const jobName = new Ref<string>("");
+const projectIdOption = new Ref<string>("");
+const imageNameOption = new Ref<string>("");
+const groupIdOption = new Ref<string>("");
+const priorityOption = new Ref<Priority>("low");
+const commandOption = new Ref<string>("");
+const commandFileOption = new Ref<string>("");
+const gpusOption = new Ref<number>(1);
+const maxTimeOption = new Ref<string>("");
+const nodesOption = new Ref<number>(1);
 
-async function validateParams(ctx: CommandContext): Promise<TerminalValidationResult> {
-    const name = ctx.args[0]!;
+const jsonFlag = new Ref<boolean>(false);
+const yesFlag = new Ref<boolean>(false);
 
-    if (!ctx.params["--project"]) {
-        throw new Error("Missing required parameter: --project");
+async function submitHandler(self: Command): Promise<void> {
+    // Validation of parameters
+    if (!PRIORITIES.includes(priorityOption.value)) {
+        throw new Error("Invalid priority value.");
     }
-    const projectId = ctx.params["--project"];
 
-    if (!ctx.params["--image"]) {
-        throw new Error("Missing required parameter: --image");
-    }
-    const imageName = ctx.params["--image"];
-
-    if (!ctx.params["--group"]) {
-        throw new Error("Missing required parameter: --group");
-    }
-    const groupId = ctx.params["--group"];
-
-    if (!ctx.params["--priority"]) {
-        throw new Error("Missing required parameter: --priority");
-    } else {
-        if (!PRIORITIES.includes(ctx.params["--priority"] as Priority)) {
-            throw new Error("Invalid priority value");
-        }
-    }
-    const priority = resolvePriority(Number(ctx.params["--priority"]));
-
-    if (!ctx.params["--command"] && !ctx.params["--command-file"]) {
+    if (!commandOption.value && !commandFileOption.value) {
         throw new Error(
             "Missing required parameter: either --command or --command-file must be provided",
         );
     }
-    if (ctx.params["--command"] && ctx.params["--command-file"]) {
+    if (commandOption.value && commandFileOption.value) {
         throw new Error("Invalid parameters: --command and --command-file cannot be used together");
     }
-    if (ctx.params["--command-file"] && !fs.existsSync(ctx.params["--command-file"])) {
+    if (commandFileOption.value && !fs.existsSync(commandFileOption.value)) {
         throw new Error("FileNotFoundError: The specified command file does not exist");
     }
-    const command = ctx.params["--command"];
-    const commandFile = ctx.params["--command-file"];
 
-    if (!ctx.params["--gpus"]) {
-        throw new Error("Missing required parameter: --gpus");
+    if (!Number.isInteger(gpusOption.value) || gpusOption.value <= 0 || gpusOption.value > 8) {
+        throw new Error("Invalid number of GPUs: must be an integer between 1 and 8");
     }
-    const gpus = parseInteger(ctx.params["--gpus"]);
-    if (gpus === undefined) {
-        throw new Error("Invalid value for --gpus, must be a positive integer");
-    }
-    // Detect if the gpus number is a valid option.
-    const quotaMap: Record<number, string> = await groupsApi.getQuotaMap(groupId, priority);
-    if (!quotaMap[gpus]) {
-        throw new Error(
-            [
-                `Invalid value for --gpus: ${gpus}. For`,
-                `Group: ${groupId}, Priority: ${priority}`,
-                `The available GPU counts are: ${Object.keys(quotaMap).join(", ")}`,
-            ].join("\n"),
-        );
-    }
-    const quotaId = quotaMap[gpus];
 
-    if (!ctx.params["--max-time"]) {
-        throw new Error("Missing required parameter: --max-time");
-    }
     const factorMap: Record<string, number> = {
         s: 1000,
         m: 60000,
         h: 3600000,
         d: 86400000,
     };
-    const timeUnit = ctx.params["--max-time"].slice(-1);
-    const timeValue = ctx.params["--max-time"].slice(0, -1);
+    const timeUnit = maxTimeOption.value.slice(-1);
+    const timeValue = maxTimeOption.value.slice(0, -1);
     if (!factorMap[timeUnit]) {
-        throw new Error("Invalid unit for --max-time, must end with 's', 'm', 'h', or 'd'");
+        throw new Error("Invalid unit for --max-time: must end with 's', 'm', 'h', or 'd'");
     }
-    let time = parseInteger(timeValue);
-    if (time !== undefined) {
-        if (time <= 0) {
-            throw new Error("Invalid value for --max-time, must be a positive integer");
-        }
-    } else {
-        throw new Error(`Invalid value for --max-time, got ${timeValue}`);
+    let time = parseFloat(timeValue);
+    if (isNaN(time) || time <= 0) {
+        throw new Error("Invalid value for --max-time: must be a positive number");
     }
     const maxTime = time * factorMap[timeUnit];
 
-    let nodes: number | undefined = 1; // default value
-    if (ctx.params["--nodes"]) {
-        nodes = parseInteger(ctx.params["--nodes"]);
-        if (nodes !== undefined) {
-            if (nodes < 1) {
-                throw new Error("Invalid value for --nodes, must be a positive integer");
-            }
-            if (nodes > 1 && gpus !== 8) {
-                throw new Error("Set --nodes > 1 is only allowed when --gpus=8");
-            }
-        } else {
-            throw new Error(`Invalid value for --nodes, got ${ctx.params["--nodes"]}`);
-        }
+    if (!Number.isInteger(nodesOption.value) || nodesOption.value <= 0) {
+        throw new Error("Invalid value for --nodes: must be a positive integer");
+    }
+    if (nodesOption.value > 1 && gpusOption.value !== 8) {
+        throw new Error("Set --nodes > 1 is only allowed when --gpus=8");
     }
 
-    return {
-        name,
-        projectId,
-        imageName,
-        groupId,
-        quotaId,
-        priority,
-        command,
-        commandFile,
-        maxTime,
-        nodes,
-    };
-}
+    const quotaMap: Record<number, string> = await groupsApi.getQuotaMap(
+        groupIdOption.value,
+        priorityOption.value,
+    );
+    if (!quotaMap[gpusOption.value]) {
+        throw new Error(
+            `Invalid number of GPUs: ${gpusOption.value}.  ` +
+                `Available options for group ${groupIdOption.value} ` +
+                `with priority ${priorityOption.value} are: ` +
+                `${Object.keys(quotaMap).join(", ")}`,
+        );
+    }
 
-async function submitHandler(ctx: CommandContext): Promise<void> {
-    const params = await validateParams(ctx);
-
-    if (!ctx.flags.has("--yes")) {
-        if (!ctx.flags.has("--json")) {
+    // Handle dry-run output if --yes flag is not set
+    if (!yesFlag.value) {
+        if (jsonFlag.value) {
             console.log(JSON.stringify({ validated: true, submitted: false }, null, 2));
         } else {
             console.log(
@@ -145,17 +89,18 @@ async function submitHandler(ctx: CommandContext): Promise<void> {
         return;
     }
 
+    // Submit the job using the API
     const data = await jobsApi.submitJob({
-        name: params.name,
-        projectId: params.projectId,
-        imageName: params.imageName,
-        groupId: params.groupId,
-        priority: params.priority,
-        command: params.command,
-        commandFile: params.commandFile,
-        quotaId: params.quotaId,
-        maxRunSeconds: params.maxTime,
-        nodeCount: params.nodes,
+        name: jobName.value,
+        projectId: projectIdOption.value,
+        imageName: imageNameOption.value,
+        groupId: groupIdOption.value,
+        priority: toPriorityNumber(priorityOption.value),
+        command: commandOption.value,
+        commandFile: commandFileOption.value,
+        quotaId: quotaMap[gpusOption.value]!,
+        maxRunSeconds: maxTime,
+        nodeCount: nodesOption.value,
     });
 
     // Handle the results for better display
@@ -165,30 +110,77 @@ async function submitHandler(ctx: CommandContext): Promise<void> {
     };
 
     // Output the results
-    prettyPrint(results, ctx.flags.has("--json"), ["jobId", "name", "status", "priority"]);
+    prettyPrint(results, jsonFlag.value, ["jobId", "name", "status", "priority"]);
 }
 
-export const submitCommand: Command = {
+const submitCommand = new Command({
     name: "submit",
-    hidden: false,
     short: "submit a job",
-    description: "Submit a job with the specified parameters.",
+    long: "Submit a job with the specified parameters.",
     aliases: ["create"],
-    positionalNames: ["<job-name>"],
-    valueOptions: {
-        "--project": "project Id",
-        "--image": "name of the image to use",
-        "--group": "computation group Id",
-        "--priority": "job priority level",
-        "--command": "command to execute for the job",
-        "--command-file": "path to a file to execute using bash",
-        "--gpus": "number of GPUs per node: 1, 2, 4, 8",
-        "--max-time": "maximum time to run (e.g. 60s, 10m, 2h, 1d)",
-        "--nodes": "number of nodes used (default: 1)",
-    },
-    flagOptions: {
-        "--json": "output in JSON format",
-        "--yes": "job will be submitted only when this flag is set",
-    },
     run: submitHandler,
-};
+});
+
+submitCommand.setPos(jobName, {
+    name: "job-name",
+});
+
+submitCommand.setOption(projectIdOption, {
+    name: "project",
+    required: true,
+    description: "project Id",
+});
+submitCommand.setOption(imageNameOption, {
+    name: "image",
+    required: true,
+    description: "name of the image to use",
+});
+submitCommand.setOption(groupIdOption, {
+    name: "group",
+    required: true,
+    description: "computation group Id",
+});
+submitCommand.setOption(priorityOption, {
+    name: "priority",
+    required: true,
+    description: "job priority level",
+});
+submitCommand.setOption(commandOption, {
+    name: "command",
+    required: false,
+    description: "command to execute for the job",
+});
+submitCommand.setOption(commandFileOption, {
+    name: "command-file",
+    required: false,
+    description: "path to a file to execute using bash",
+});
+submitCommand.setOption(gpusOption, {
+    name: "gpus",
+    required: true,
+    description: "number of GPUs per node",
+});
+submitCommand.setOption(maxTimeOption, {
+    name: "max-time",
+    required: true,
+    description: "maximum time to run (e.g. 60s, 10m, 2h, 1d)",
+});
+submitCommand.setOption(nodesOption, {
+    name: "nodes",
+    required: false,
+    defaultValue: 1,
+    description: "number of nodes used",
+});
+
+submitCommand.setFlag(jsonFlag, {
+    name: "json",
+    shortName: "j",
+    description: "output in JSON format",
+});
+submitCommand.setFlag(yesFlag, {
+    name: "yes",
+    shortName: "y",
+    description: "job will be submitted only when this flag is set",
+});
+
+export { submitCommand };

@@ -17,6 +17,8 @@ const stopCommand = new Command({
     run: stopHandler,
 });
 
-stopCommand.setPos(jobId, "job-id");
+stopCommand.setPos(jobId, {
+    name: "job-id",
+});
 
 export { stopCommand };

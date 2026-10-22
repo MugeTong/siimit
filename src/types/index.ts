@@ -30,3 +30,10 @@ export function resolvePriority(value: number): Priority {
     }
     return "high";
 }
+
+export function toPriorityNumber(priority: Priority): number {
+    if (priority === "low") {
+        return 1;
+    }
+    return 4;
+}
