@@ -60,17 +60,20 @@ const listCommand = new Command({
 listCommand.setOption(limitOption, {
     name: "limit",
     required: false,
+    valueName: "number",
     defaultValue: 10,
     description: "number of jobs displayed",
 });
 listCommand.setOption(keywordOption, {
     name: "keyword",
     required: false,
+    valueName: "string",
     description: "filter by a keyword in name or job ID",
 });
 listCommand.setOption(statusOption, {
     name: "status",
     required: false,
+    valueName: "status",
     description: `filter by status: ${JOB_STATUSES.join(", ")}`,
 });
 

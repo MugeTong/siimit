@@ -128,46 +128,55 @@ submitCommand.setPos(jobName, {
 submitCommand.setOption(projectIdOption, {
     name: "project",
     required: true,
+    valueName: "id",
     description: "project Id",
 });
 submitCommand.setOption(imageNameOption, {
     name: "image",
     required: true,
+    valueName: "name",
     description: "name of the image to use",
 });
 submitCommand.setOption(groupIdOption, {
     name: "group",
     required: true,
+    valueName: "id",
     description: "computation group Id",
 });
 submitCommand.setOption(priorityOption, {
     name: "priority",
     required: true,
+    valueName: "level",
     description: "job priority level",
 });
 submitCommand.setOption(commandOption, {
     name: "command",
     required: false,
-    description: "command to execute for the job",
+    valueName: "string",
+    description: "command to execute; required if --command-file is not provided",
 });
 submitCommand.setOption(commandFileOption, {
     name: "command-file",
     required: false,
-    description: "path to a file to execute using bash",
+    valueName: "path",
+    description: "bash script file to execute; required if --command is not provided",
 });
 submitCommand.setOption(gpusOption, {
     name: "gpus",
     required: true,
+    valueName: "number",
     description: "number of GPUs per node",
 });
 submitCommand.setOption(maxTimeOption, {
     name: "max-time",
     required: true,
+    valueName: "duration",
     description: "maximum time to run (e.g. 60s, 10m, 2h, 1d)",
 });
 submitCommand.setOption(nodesOption, {
     name: "nodes",
     required: false,
+    valueName: "number",
     defaultValue: 1,
     description: "number of nodes used",
 });

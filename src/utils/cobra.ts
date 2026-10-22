@@ -18,6 +18,7 @@ export class Command {
             state: {
                 variable: Ref<string | number>;
                 valueSet: boolean;
+                valueName?: string;
                 shortName?: string;
                 defaultValue?: string | number;
                 description: string;
@@ -106,6 +107,7 @@ export class Command {
             name: string;
             shortName?: string;
             required: boolean;
+            valueName?: string;
             defaultValue?: T;
             description: string;
         },
@@ -122,6 +124,7 @@ export class Command {
             valueSet: false,
             shortName: conf.shortName,
             defaultValue: conf.defaultValue,
+            valueName: conf.valueName,
             description: conf.description,
         };
         this.options[conf.name] = {
@@ -206,8 +209,7 @@ export class Command {
                 .filter(([, value]) => !value.isShort)
                 .map(([key, value]) => {
                     const sn = value.state.shortName ? `-${value.state.shortName}, ` : "    ";
-                    const vt = typeof value.state.variable.value === "string" ? "string" : "number";
-                    let option = `${sn}--${key} ${vt}`;
+                    let option = `${sn}--${key} <${value.state.valueName || "value"}>`;
                     let desc = value.state.description || "no description available";
                     if (value.state.defaultValue !== undefined) {
                         desc += ` (default: ${value.state.defaultValue})`;
@@ -226,7 +228,7 @@ export class Command {
             }
 
             if (availableOptions.length > 0) {
-                console.log("\nAvailable Options:");
+                console.log("\nOptions:");
                 const maxLen = Math.max(...availableOptions.map((item) => item[1].length));
                 for (const [, option, description] of availableOptions) {
                     console.log(`  ${option.padEnd(maxLen)}  ${description}`);
