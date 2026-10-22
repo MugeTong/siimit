@@ -5,6 +5,7 @@ import { imagesCommand } from "./images";
 import { listCommand } from "./list";
 import { loginCommand } from "./login";
 import { logoutCommand } from "./logout";
+import { logsCommand } from "./logs";
 import { projectsCommand } from "./projects";
 import { stopCommand } from "./stop";
 import { submitCommand } from "./submit";
@@ -18,6 +19,7 @@ export const commands = [
     submitCommand,
     listCommand,
     getCommand,
+    logsCommand,
     stopCommand,
     deleteCommand,
 ];
