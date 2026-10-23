@@ -31,7 +31,8 @@ groups      查看 GPU 计算分区及使用情况
 submit      校验或提交 GPU 任务
 list        查看任务列表
 get         查看单个任务信息
-logs        打印任务日志
 stop        停止任务
 delete      删除任务记录
+logs        打印任务日志
+wait        等待任务达到指定状态
 ```

@@ -7,6 +7,8 @@ interface WorkspaceStorage {
     load(): Promise<WorkspaceId>;
 }
 
+// This class has not been implemented yet.
+// It will route users to the distributed training workspace.
 class FileWorkspaceStorage implements WorkspaceStorage {
     constructor(
         private readonly filePath: string = join(homedir(), ".config", "siimit", "config.json"),

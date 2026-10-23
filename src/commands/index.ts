@@ -9,6 +9,7 @@ import { logsCommand } from "./logs";
 import { projectsCommand } from "./projects";
 import { stopCommand } from "./stop";
 import { submitCommand } from "./submit";
+import { waitCommand } from "./wait";
 
 export const commands = [
     loginCommand,
@@ -19,7 +20,8 @@ export const commands = [
     submitCommand,
     listCommand,
     getCommand,
-    logsCommand,
     stopCommand,
     deleteCommand,
+    logsCommand,
+    waitCommand,
 ];

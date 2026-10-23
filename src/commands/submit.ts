@@ -2,7 +2,7 @@ import { Command, Ref } from "@/utils";
 import fs from "fs";
 import { groupsApi, jobsApi } from "@/api";
 import { PRIORITIES, type Priority, toPriorityNumber } from "@/types";
-import { prettyPrint } from "@/utils";
+import { parseDuration, prettyPrint } from "@/utils";
 
 const jobName = new Ref<string>("");
 const projectIdOption = new Ref<string>("");
@@ -40,22 +40,10 @@ async function submitHandler(self: Command): Promise<void> {
         throw new Error("Invalid number of GPUs: must be an integer between 1 and 8");
     }
 
-    const factorMap: Record<string, number> = {
-        s: 1000,
-        m: 60000,
-        h: 3600000,
-        d: 86400000,
-    };
-    const timeUnit = maxTimeOption.value.slice(-1);
-    const timeValue = maxTimeOption.value.slice(0, -1);
-    if (!factorMap[timeUnit]) {
-        throw new Error("Invalid unit for --max-time: must end with 's', 'm', 'h', or 'd'");
+    const maxTime = parseDuration(maxTimeOption.value);
+    if (maxTime <= 0) {
+        throw new Error("Invalid value for --max-time: must be a positive duration");
     }
-    let time = parseFloat(timeValue);
-    if (isNaN(time) || time <= 0) {
-        throw new Error("Invalid value for --max-time: must be a positive number");
-    }
-    const maxTime = time * factorMap[timeUnit];
 
     if (!Number.isInteger(nodesOption.value) || nodesOption.value <= 0) {
         throw new Error("Invalid value for --nodes: must be a positive integer");
@@ -134,7 +122,7 @@ submitCommand.setOption(projectIdOption, {
 submitCommand.setOption(imageNameOption, {
     name: "image",
     required: true,
-    valueName: "name",
+    valueName: "name:version",
     description: "name of the image to use",
 });
 submitCommand.setOption(groupIdOption, {

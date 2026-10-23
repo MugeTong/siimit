@@ -1,5 +1,5 @@
 import { Ref, Command } from "./cobra";
-import { timestamp2date } from "./date";
+import { parseDuration, timestamp2date, sleep } from "./time";
 import { prettyPrint } from "./pretty-print";
 
-export { Ref, Command, timestamp2date, prettyPrint };
+export { Ref, Command, parseDuration, timestamp2date, sleep, prettyPrint };
