@@ -25,7 +25,7 @@ async function waitHandler(self: Command) {
     }
 
     const statusMap: Record<WaitForStatus, readonly JobStatus[]> = {
-        running: ["running"],
+        running: ["running", "succeeded", "failed", "stopped"],
         terminated: ["succeeded", "failed", "stopped"],
     };
     const targetStatuses = statusMap[forOption.value];
@@ -37,7 +37,7 @@ async function waitHandler(self: Command) {
 
     while (true) {
         data = await jobsApi.getJob(jobId.value);
-        if (!targetStatuses.includes(data.status)) {
+        if (targetStatuses.includes(data.status)) {
             break;
         }
 
