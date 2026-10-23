@@ -14,7 +14,7 @@ async function getHandler(self: Command): Promise<void> {
         status: data.status.toUpperCase(),
         createdAt: timestamp2date(data.createdAt),
         finishedAt: data.finishedAt ? timestamp2date(data.finishedAt) : "N/A",
-        runningSeconds: data.runningSeconds ?? "N/A"
+        runningSeconds: data.runningSeconds ?? "N/A",
     };
 
     // Output the results
