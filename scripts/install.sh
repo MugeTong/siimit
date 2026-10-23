@@ -43,7 +43,7 @@ INSTALL_DIR="$HOME/.local/bin"
 
 # Download and extract the package
 printf "\033[1m\033[36m==>\033[0m\033[1m Downloading siimit...\033[0m\n"
-curl -fsSLo "$PKG_PATH" "$PKG_URL"
+curl -fsSL --progress-bar -o "$PKG_PATH" "$PKG_URL"
 
 # Extract the package
 printf "\033[1m\033[36m==>\033[0m\033[1m Extracting siimit...\033[0m\n"

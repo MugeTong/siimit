@@ -24,10 +24,8 @@
     },
     "devDependencies": {
         "@types/bun": "latest",
-        "prettier": "^3.9.10"
-    },
-    "peerDependencies": {
-        "typescript": "^5"
+        "prettier": "^3.9.10",
+        "typescript": "^7.0.2"
     },
     "dependencies": {
         "console-table-printer": "^2.16.1"
