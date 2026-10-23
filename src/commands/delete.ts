@@ -3,10 +3,16 @@ import { jobsApi } from "@/api";
 
 const jobId = new Ref("");
 
+const jsonFlag = new Ref<boolean>(false);
+
 async function deleteHandler(self: Command): Promise<void> {
     await jobsApi.deleteJob(jobId.value);
 
-    console.log(`Job ${jobId.value} deleted successfully.`);
+    if (jsonFlag.value) {
+        console.log(JSON.stringify({ job: jobId.value, result: "Job has been deleted." }));
+    } else {
+        console.log(`Job ${jobId.value} deleted successfully.`);
+    }
 }
 
 const deleteCommand = new Command({
@@ -19,6 +25,12 @@ const deleteCommand = new Command({
 
 deleteCommand.setPos(jobId, {
     name: "job-id",
+});
+
+deleteCommand.setFlag(jsonFlag, {
+    name: "json",
+    shortName: "j",
+    description: "output in JSON format",
 });
 
 export { deleteCommand };

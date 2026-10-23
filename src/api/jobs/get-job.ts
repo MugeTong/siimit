@@ -13,6 +13,7 @@ type JobDetails = {
     projectName: string;
     createdAt: number;
     finishedAt?: number;
+    runningSeconds?: number;
     gpuCount: number;
     command: string;
 };
@@ -30,6 +31,7 @@ type GetJobResponse = ServiceResponse<{
     project_name: string;
     created_at: string;
     finished_at?: string;
+    running_time_ms?: string;
     gpu_count: number;
     command: string;
 }>;
@@ -59,7 +61,8 @@ export async function getJob(jobId: string): Promise<JobDetails> {
     const payload = (await response.json()) as GetJobResponse;
     if (!("Result" in payload)) {
         const errorCode = payload.ResponseMetadata.Error.Code;
-        const errorMessage = payload.ResponseMetadata.Error.Message;
+        let errorMessage = payload.ResponseMetadata.Error.Message;
+        errorMessage = errorMessage === "Access denied" ? "Job not found" : errorMessage;
         throw new Error(`API Error: ${errorCode} - ${errorMessage}`);
     }
 
@@ -74,6 +77,9 @@ export async function getJob(jobId: string): Promise<JobDetails> {
         projectName: payload.Result.project_name,
         createdAt: Number(payload.Result.created_at),
         finishedAt: payload.Result.finished_at ? Number(payload.Result.finished_at) : undefined,
+        runningSeconds: payload.Result.running_time_ms
+            ? Math.floor(Number(payload.Result.running_time_ms) / 1000)
+            : undefined,
         gpuCount: payload.Result.gpu_count,
         command: payload.Result.command,
     };

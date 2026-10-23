@@ -29,7 +29,7 @@ async function waitHandler(self: Command) {
         terminated: ["succeeded", "failed", "stopped"],
     };
     const targetStatuses = statusMap[forOption.value];
-    const deadline = Date.now() + timeoutDuration;
+    const deadline = Date.now() + timeoutDuration * 1000;
 
     let numChecks = 0;
     let checkInterval = 1000;
@@ -93,7 +93,7 @@ waitCommand.setOption(timeoutOption, {
     name: "timeout",
     required: true,
     valueName: "duration",
-    description: "timeout duration (e.g. 60s, 10m, 2h, 1d)",
+    description: "timeout duration (e.g. 1m, 2h, 3d)",
 });
 
 waitCommand.setFlag(jsonFlag, {

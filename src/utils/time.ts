@@ -11,19 +11,26 @@ export function timestamp2date(timestamp: number, show_ms?: boolean): string {
     });
 }
 
+/**
+ * Parses a duration string into seconds.
+ * @param duration - The duration string (e.g., "5m", "2h", "1d").
+ * @returns The duration in seconds.
+ * @throws Error if the format is invalid.
+ */
 export function parseDuration(duration: string): number {
     const factorMap = {
-        s: 1000,
-        m: 60000,
-        h: 3600000,
-        d: 86400000,
+        m: 60,
+        h: 3600,
+        d: 86400,
     } as const;
     type TimeUnit = keyof typeof factorMap;
 
-    const regex = /^(\d+(?:\.\d+)?)([smhd])$/;
+    const regex = /^(\d+(?:\.\d+)?)([mhd])$/;
     const match = duration.match(regex);
     if (!match || !match[1] || !match[2]) {
-        throw new Error("Invalid duration format. Use a number followed by 's', 'm', 'h', or 'd'.");
+        throw new Error(
+            `Invalid duration format. Use a number followed by ${Object.keys(factorMap).join(", ")}.`,
+        );
     }
 
     const timeUnit = match[2] as TimeUnit;

@@ -3,10 +3,16 @@ import { jobsApi } from "@/api";
 
 const jobId = new Ref("");
 
+const jsonFlag = new Ref<boolean>(false);
+
 async function stopHandler(self: Command): Promise<void> {
     await jobsApi.stopJob(jobId.value);
 
-    console.log(`Job ${jobId.value} stop request submitted successfully.`);
+    if (jsonFlag.value) {
+        console.log(JSON.stringify({ job: jobId.value, result: "Job stop request submitted." }));
+    } else {
+        console.log(`Job ${jobId.value} stop request submitted successfully.`);
+    }
 }
 
 const stopCommand = new Command({
@@ -19,6 +25,12 @@ const stopCommand = new Command({
 
 stopCommand.setPos(jobId, {
     name: "job-id",
+});
+
+stopCommand.setFlag(jsonFlag, {
+    name: "json",
+    shortName: "j",
+    description: "output in JSON format",
 });
 
 export { stopCommand };

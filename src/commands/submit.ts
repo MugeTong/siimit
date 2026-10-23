@@ -12,7 +12,7 @@ const priorityOption = new Ref<Priority>("low");
 const commandOption = new Ref<string>("");
 const commandFileOption = new Ref<string>("");
 const gpusOption = new Ref<number>(1);
-const maxTimeOption = new Ref<string>("");
+const maxRunTimeOption = new Ref<string>("");
 const nodesOption = new Ref<number>(1);
 
 const jsonFlag = new Ref<boolean>(false);
@@ -40,9 +40,9 @@ async function submitHandler(self: Command): Promise<void> {
         throw new Error("Invalid number of GPUs: must be an integer between 1 and 8");
     }
 
-    const maxTime = parseDuration(maxTimeOption.value);
-    if (maxTime <= 0) {
-        throw new Error("Invalid value for --max-time: must be a positive duration");
+    const maxRunTime = parseDuration(maxRunTimeOption.value);
+    if (!Number.isFinite(maxRunTime) || maxRunTime <= 0) {
+        throw new Error("Invalid value for --max-run-time: must be a positive duration");
     }
 
     if (!Number.isInteger(nodesOption.value) || nodesOption.value <= 0) {
@@ -87,7 +87,7 @@ async function submitHandler(self: Command): Promise<void> {
         command: commandOption.value,
         commandFile: commandFileOption.value,
         quotaId: quotaMap[gpusOption.value]!,
-        maxRunSeconds: maxTime,
+        maxRunSeconds: maxRunTime,
         nodeCount: nodesOption.value,
     });
 
@@ -155,11 +155,11 @@ submitCommand.setOption(gpusOption, {
     valueName: "number",
     description: "number of GPUs per node",
 });
-submitCommand.setOption(maxTimeOption, {
-    name: "max-time",
+submitCommand.setOption(maxRunTimeOption, {
+    name: "max-run-time",
     required: true,
     valueName: "duration",
-    description: "maximum time to run (e.g. 60s, 10m, 2h, 1d)",
+    description: "maximum time to run (e.g. 1m, 2h, 3d)",
 });
 submitCommand.setOption(nodesOption, {
     name: "nodes",
