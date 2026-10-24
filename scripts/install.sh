@@ -44,17 +44,23 @@ INSTALL_DIR="$HOME/.local/bin"
 # Version check
 if command -v siimit >/dev/null 2>&1; then
     INSTALLED_VERSION="$(siimit --version | sed -E 's/^.*version[[:space:]]+//')"
-    LATEST_VERSION="$(curl -fsSL https://api.github.com/repos/MugeTong/siimit/releases/latest | sed -nE 's/.*"tag_name"[[:space:]]*:[[:space:]]*"([^"]*)".*/\1/p' | head -n 1)"
-
-    # Git tags commonly use a leading "v", while the binary may not.
     INSTALLED_VERSION="${INSTALLED_VERSION#v}"
-    LATEST_VERSION="${LATEST_VERSION#v}"
 
-    if [[ "$INSTALLED_VERSION" == "$LATEST_VERSION" ]]; then
-        printf "\033[1m\033[32m✔ Siimit is already up-to-date (version %s).\033[0m\n" "$INSTALLED_VERSION"
-        exit 0
+    # Read the release tag from the redirect instead of using the GitHub API.
+    if LATEST_LOCATION="$(curl -fsSI "$PKG_URL" 2>/dev/null | sed -nE 's/^[Ll]ocation:[[:space:]]*([^[:space:]]+).*/\1/p' | head -n 1)"; then
+        LATEST_VERSION="$(printf '%s\n' "$LATEST_LOCATION" | sed -nE 's#^.*/releases/download/([^/]+)/.*#\1#p')"
+        LATEST_VERSION="${LATEST_VERSION#v}"
+
+        if [[ -n "$LATEST_VERSION" && "$INSTALLED_VERSION" == "$LATEST_VERSION" ]]; then
+            printf "\033[1m\033[32m✔ Siimit is already up-to-date (version %s).\033[0m\n" "$INSTALLED_VERSION"
+            exit 0
+        elif [[ -n "$LATEST_VERSION" ]]; then
+            printf "\033[36m\nA newer version of Siimit is available (installed: %s, latest: %s).\033[0m\n\n" "$INSTALLED_VERSION" "$LATEST_VERSION"
+        else
+            printf "\033[33mCould not determine the latest version; continuing with the download.\033[0m\n"
+        fi
     else
-        printf "\033[36m\nA newer version of Siimit is available (installed: %s, latest: %s).\033[0m\n\n" "$INSTALLED_VERSION" "$LATEST_VERSION"
+        printf "\033[33mCould not check for updates; continuing with the download.\033[0m\n"
     fi
 fi
 
