@@ -12,7 +12,7 @@ type StoredAuth = {
     refreshToken: string;
     tokenType: string;
     expiresAt: number;
-    refreshExpiresAt: number;
+    refreshExpiresAt: number | null;
 };
 
 interface AuthStorage {
@@ -35,7 +35,7 @@ class FileAuthStorage implements AuthStorage {
                 !auth.accessToken ||
                 !auth.expiresAt ||
                 !auth.refreshToken ||
-                !auth.refreshExpiresAt ||
+                auth.refreshExpiresAt === undefined ||
                 !auth.tokenType
             ) {
                 throw new Error("Invalid auth data in storage");
@@ -44,7 +44,7 @@ class FileAuthStorage implements AuthStorage {
             // Check if the access token has expired
             if (Date.now() >= auth.expiresAt) {
                 // If the fresh token has also expired, clear the storage and return null
-                if (Date.now() >= auth.refreshExpiresAt) {
+                if (auth.refreshExpiresAt !== null && Date.now() >= auth.refreshExpiresAt) {
                     await this.clear();
                     throw new Error("Refresh token has expired. Please log in again.");
                 }
@@ -54,8 +54,11 @@ class FileAuthStorage implements AuthStorage {
                     accessToken: data.access_token,
                     refreshToken: data.refresh_token,
                     tokenType: data.token_type,
-                    expiresAt: Date.now() + data.expires_in * 1000 - 5000, // Subtract 5 seconds to account for any potential delays
-                    refreshExpiresAt: Date.now() + data.refresh_expires_in * 1000 - 5000, // Subtract 5 seconds
+                    expiresAt: Date.now() + data.expires_in * 1000 - 5000,
+                    refreshExpiresAt:
+                        data.refresh_expires_in === 0
+                            ? null
+                            : Date.now() + data.refresh_expires_in * 1000 - 5000,
                 };
                 await this.save(newAuth);
                 return `${newAuth.tokenType} ${newAuth.accessToken}`;

@@ -34,6 +34,7 @@ async function requestDeviceCode(): Promise<DeviceCodeResponse> {
         },
         body: new URLSearchParams({
             client_id: "inspire-code",
+            scope: "offline_access",
         }),
     });
     if (!response.ok) {

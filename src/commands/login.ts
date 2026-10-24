@@ -19,7 +19,10 @@ async function loginHandler(self: Command): Promise<void> {
         refreshToken: auth.refresh_token,
         tokenType: auth.token_type,
         expiresAt: Date.now() + auth.expires_in * 1000 - 5000, // Subtract 5 seconds to account for any potential delays
-        refreshExpiresAt: Date.now() + auth.refresh_expires_in * 1000 - 5000, // Subtract 5 seconds
+        refreshExpiresAt:
+            auth.refresh_expires_in === 0
+                ? null
+                : Date.now() + auth.refresh_expires_in * 1000 - 5000, // Subtract 5 seconds
     });
 
     console.log(`\nLogged in successfully!`);
