@@ -44,7 +44,7 @@ INSTALL_DIR="$HOME/.local/bin"
 # Version check
 if command -v siimit >/dev/null 2>&1; then
     INSTALLED_VERSION="$(siimit --version | sed -E 's/^.*version[[:space:]]+//')"
-    LATEST_VERSION="$(curl -sL https://api.github.com/repos/MugeTong/siimit/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')"
+    LATEST_VERSION="$(curl -fsSL https://api.github.com/repos/MugeTong/siimit/releases/latest | sed -nE 's/.*"tag_name"[[:space:]]*:[[:space:]]*"([^"]*)".*/\1/p' | head -n 1)"
 
     # Git tags commonly use a leading "v", while the binary may not.
     INSTALLED_VERSION="${INSTALLED_VERSION#v}"
