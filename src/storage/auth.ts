@@ -22,11 +22,45 @@ interface AuthStorage {
 }
 
 class FileAuthStorage implements AuthStorage {
+    private cachedStorage?: StoredAuth;
+
     constructor(
         private readonly filePath: string = join(homedir(), ".config", "siimit", "auth.json"),
     ) {}
 
+    async checkEffectiveness(auth: StoredAuth): Promise<StoredAuth> {
+        // Check if the access token has expired
+        if (Date.now() >= auth.expiresAt) {
+            // If the fresh token has also expired, clear the storage and return null
+            if (auth.refreshExpiresAt !== null && Date.now() >= auth.refreshExpiresAt) {
+                await this.clear();
+                throw new Error("Refresh token has expired. Please log in again.");
+            }
+
+            const data = await authApi.refreshAuth(auth.refreshToken);
+            const newAuth: StoredAuth = {
+                accessToken: data.access_token,
+                refreshToken: data.refresh_token,
+                tokenType: data.token_type,
+                expiresAt: Date.now() + data.expires_in * 1000 - 5000,
+                refreshExpiresAt:
+                    data.refresh_expires_in === 0
+                        ? null
+                        : Date.now() + data.refresh_expires_in * 1000 - 5000,
+            };
+            await this.save(newAuth);
+            return newAuth;
+        }
+        this.cachedStorage = auth;
+        return auth;
+    }
+
     async load(): Promise<string> {
+        if (this.cachedStorage) {
+            const effectiveAuth = await this.checkEffectiveness(this.cachedStorage);
+            return `${effectiveAuth.tokenType} ${effectiveAuth.accessToken}`;
+        }
+
         try {
             const content = await readFile(this.filePath, "utf-8");
             const auth = JSON.parse(content) as StoredAuth;
@@ -41,30 +75,8 @@ class FileAuthStorage implements AuthStorage {
                 throw new Error("Invalid auth data in storage");
             }
 
-            // Check if the access token has expired
-            if (Date.now() >= auth.expiresAt) {
-                // If the fresh token has also expired, clear the storage and return null
-                if (auth.refreshExpiresAt !== null && Date.now() >= auth.refreshExpiresAt) {
-                    await this.clear();
-                    throw new Error("Refresh token has expired. Please log in again.");
-                }
-
-                const data = await authApi.refreshAuth(auth.refreshToken);
-                const newAuth: StoredAuth = {
-                    accessToken: data.access_token,
-                    refreshToken: data.refresh_token,
-                    tokenType: data.token_type,
-                    expiresAt: Date.now() + data.expires_in * 1000 - 5000,
-                    refreshExpiresAt:
-                        data.refresh_expires_in === 0
-                            ? null
-                            : Date.now() + data.refresh_expires_in * 1000 - 5000,
-                };
-                await this.save(newAuth);
-                return `${newAuth.tokenType} ${newAuth.accessToken}`;
-            }
-
-            return `${auth.tokenType} ${auth.accessToken}`;
+            const checkedAuth = await this.checkEffectiveness(auth);
+            return `${checkedAuth.tokenType} ${checkedAuth.accessToken}`;
         } catch (error) {
             if (isFileNotFoundError(error)) {
                 throw new Error("No auth data found. Please log in.");
@@ -75,13 +87,10 @@ class FileAuthStorage implements AuthStorage {
 
     async save(auth: StoredAuth): Promise<void> {
         await mkdir(dirname(this.filePath), { recursive: true });
-
-        await writeFile(this.filePath, JSON.stringify(auth, null, 2), {
-            encoding: "utf8",
-            mode: 0o600,
-        });
-
+        await writeFile(this.filePath, JSON.stringify(auth, null, 2), "utf-8");
         await chmod(this.filePath, 0o600);
+
+        this.cachedStorage = auth;
     }
 
     async clear(): Promise<void> {
@@ -92,6 +101,8 @@ class FileAuthStorage implements AuthStorage {
                 throw error;
             }
         }
+
+        this.cachedStorage = undefined;
     }
 }
 

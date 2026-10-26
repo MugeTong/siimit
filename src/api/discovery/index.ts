@@ -1,3 +1,6 @@
+import { fetchWithTimeout } from "@/utils";
+import { confStorage } from "@/storage";
+
 type RouteMetadata = {
     Name: string;
     Path: string;
@@ -29,9 +32,10 @@ type DiscoveryResponse = {
 };
 
 async function fetchDiscovery(): Promise<DiscoveryResponse> {
-    const url = new URL("/discovery", "https://qz.sii.edu.cn");
+    const { baseUrl } = await confStorage.load();
+    const url = new URL("/discovery", baseUrl);
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
         headers: {
             Accept: "application/json",
         },
@@ -48,8 +52,9 @@ async function fetchDiscovery(): Promise<DiscoveryResponse> {
 }
 
 async function checkDiscovery(version: string): Promise<[boolean, DiscoveryResponse | null]> {
-    const url = new URL("/discovery", "https://qz.sii.edu.cn");
-    const response = await fetch(url, {
+    const { baseUrl } = await confStorage.load();
+    const url = new URL("/discovery", baseUrl);
+    const response = await fetchWithTimeout(url, {
         headers: {
             Accept: "application/json",
             "If-None-Match": `"${version}"`,

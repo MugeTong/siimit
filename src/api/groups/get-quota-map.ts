@@ -1,6 +1,7 @@
-import { authStorage, discoveryStorage, workspaceStorage } from "@/storage";
+import { authStorage, discoveryStorage, confStorage } from "@/storage";
 import type { ServiceResponse } from "../types";
 import type { Priority } from "@/types";
+import { fetchWithTimeout } from "@/utils";
 
 type GetQuotaMapResponse = ServiceResponse<{
     lcg_resource_spec_prices: Array<{
@@ -15,10 +16,10 @@ export async function getQuotaMap(
 ): Promise<Record<number, string>> {
     const token = await authStorage.load();
     const endpoint = await discoveryStorage.load("resource-price");
-    const workspaceId = await workspaceStorage.load();
-    const url = new URL(endpoint, "https://qz.sii.edu.cn");
+    const { baseUrl, workspaceId } = await confStorage.load();
+    const url = new URL(endpoint, baseUrl);
     url.searchParams.set("Action", "GetLogicComputeGroupResourceSpecPrices");
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
         headers: {
             Accept: "application/json",
             Authorization: token,

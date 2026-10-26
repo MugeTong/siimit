@@ -1,6 +1,7 @@
-import { authStorage, discoveryStorage, workspaceStorage } from "@/storage";
+import { authStorage, discoveryStorage, confStorage } from "@/storage";
 import type { ServiceResponse } from "../types";
 import { getGroup } from "./get-group";
+import { fetchWithTimeout } from "@/utils";
 
 type GroupMetadata = {
     groupId: string;
@@ -24,10 +25,10 @@ type ListGroupsResponse = ServiceResponse<{
 export async function listGroups(): Promise<Array<GroupMetadata>> {
     const token = await authStorage.load();
     const endpoint = await discoveryStorage.load("workspace");
-    const workspaceId = await workspaceStorage.load();
-    const url = new URL(endpoint, "https://qz.sii.edu.cn");
+    const { baseUrl, workspaceId } = await confStorage.load();
+    const url = new URL(endpoint, baseUrl);
     url.searchParams.set("Action", "ListLogicComputeGroups");
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
         headers: {
             Accept: "application/json",
             Authorization: token,

@@ -1,4 +1,4 @@
-import { discoveryApi } from "@/api/discovery";
+import { discoveryApi } from "@/api";
 import { chmod, mkdir, readFile, unlink, writeFile } from "fs/promises";
 import { homedir } from "os";
 import { dirname, join } from "path";
@@ -7,8 +7,19 @@ function isFileNotFoundError(error: unknown): boolean {
     return error instanceof Error && (error as NodeJS.ErrnoException).code === "ENOENT";
 }
 
+class InvalidDiscoveryError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "InvalidDiscoveryError";
+    }
+}
+
+function isInvalidDiscoveryError(error: unknown): boolean {
+    return error instanceof InvalidDiscoveryError;
+}
+
 // The actions required for the tool.
-const services = [
+const SERVICES = [
     "image",
     "train",
     "project",
@@ -23,7 +34,7 @@ const services = [
     "resource-price",
 ] as const;
 
-type Service = (typeof services)[number];
+type Service = (typeof SERVICES)[number];
 
 type StoredDiscovery = {
     schemaVersion: number;
@@ -39,12 +50,69 @@ interface DiscoveryStorage {
 }
 
 class FileDiscoveryStorage implements DiscoveryStorage {
+    private cachedStorage?: StoredDiscovery;
+
     constructor(
         private readonly filePath: string = join(homedir(), ".cache", "siimit", "discovery.json"),
     ) {}
 
+    async requestNewDiscovery(): Promise<StoredDiscovery> {
+        const newDiscovery = await discoveryApi.fetchDiscovery();
+        const storedDiscovery: StoredDiscovery = {
+            schemaVersion: 1,
+            version: newDiscovery.Result.Version,
+            expiresAt: Date.now() + 24 * 60 * 60 * 1000, // Expires in 24 hours
+            endpoints: SERVICES.reduce<Partial<Record<Service, string>>>((acc, service) => {
+                const serviceData = newDiscovery.Result.Services.find((s) => s.Name === service);
+                if (!serviceData) {
+                    throw new Error(`Required service "${service}" not found in discovery data`);
+                }
+                acc[service] = serviceData.Path;
+                return acc;
+            }, {}),
+        };
+        await this.save(storedDiscovery);
+        return storedDiscovery;
+    }
+
+    async checkEffectiveness(discovery: StoredDiscovery): Promise<StoredDiscovery> {
+        if (Date.now() >= discovery.expiresAt) {
+            let updatedDiscovery: StoredDiscovery;
+
+            const [needsUpdate, newData] = await discoveryApi.checkDiscovery(discovery.version);
+            if (needsUpdate && newData) {
+                updatedDiscovery = {
+                    schemaVersion: 1,
+                    version: newData.Result.Version,
+                    expiresAt: Date.now() + 24 * 60 * 60 * 1000, // Expires in 24 hours
+                    endpoints: SERVICES.reduce<Partial<Record<Service, string>>>((acc, service) => {
+                        const serviceData = newData.Result.Services.find((s) => s.Name === service);
+                        if (!serviceData) {
+                            throw new Error(
+                                `Required service "${service}" not found in discovery data`,
+                            );
+                        }
+                        acc[service] = serviceData.Path;
+                        return acc;
+                    }, {}),
+                };
+            } else {
+                updatedDiscovery = discovery;
+                updatedDiscovery.expiresAt = Date.now() + 24 * 60 * 60 * 1000;
+            }
+            await this.save(updatedDiscovery);
+            return updatedDiscovery;
+        }
+        this.cachedStorage = discovery;
+        return discovery;
+    }
+
     async load(requiredService: Service): Promise<string> {
-        let requireCheck = undefined;
+        if (this.cachedStorage) {
+            const checkedDiscovery = await this.checkEffectiveness(this.cachedStorage);
+            return checkedDiscovery.endpoints[requiredService]!;
+        }
+
         try {
             const content = await readFile(this.filePath, "utf-8");
             const discovery = JSON.parse(content) as StoredDiscovery;
@@ -52,82 +120,30 @@ class FileDiscoveryStorage implements DiscoveryStorage {
             if (
                 !discovery.schemaVersion ||
                 !discovery.version ||
+                !discovery.expiresAt ||
                 !discovery.endpoints ||
-                !discovery.expiresAt
+                !discovery.endpoints[requiredService]
             ) {
-                throw new Error("Invalid discovery data in storage");
+                throw new InvalidDiscoveryError("Invalid discovery data in storage");
             }
 
-            if (Date.now() >= discovery.expiresAt) {
-                requireCheck = discovery;
-                throw new Error("Discovery data expired");
-            }
-
-            const endpoint = discovery.endpoints[requiredService];
-            if (!endpoint) {
-                throw new Error(`Required service ${requiredService} not found in discovery data`);
-            }
-
-            return endpoint;
+            const checkedDiscovery = await this.checkEffectiveness(discovery);
+            return checkedDiscovery.endpoints[requiredService]!;
         } catch (error) {
-            let data;
-            if (requireCheck) {
-                const [needsUpdate, newData] = await discoveryApi.checkDiscovery(
-                    requireCheck.version,
-                );
-                if (needsUpdate) {
-                    data = newData!.Result;
-                } else {
-                    requireCheck.expiresAt = Date.now() + 24 * 60 * 60 * 1000; // Extend the expiration by 24 hours
-                    await this.save(requireCheck);
-
-                    const endpoint = requireCheck.endpoints[requiredService];
-                    if (!endpoint) {
-                        throw new Error(
-                            `Required service ${requiredService} not found in discovery data`,
-                        );
-                    }
-                    return endpoint;
-                }
-            } else {
-                data = (await discoveryApi.fetchDiscovery()).Result;
+            if (isFileNotFoundError(error) || isInvalidDiscoveryError(error)) {
+                const discovery = await this.requestNewDiscovery();
+                return discovery.endpoints[requiredService]!;
             }
-
-            const newDiscovery: StoredDiscovery = {
-                schemaVersion: 1,
-                version: data.Version,
-                expiresAt: Date.now() + 24 * 60 * 60 * 1000, // Expires in 24 hours
-                endpoints: services.reduce<Partial<Record<Service, string>>>((acc, service) => {
-                    const serviceData = data.Services.find((s) => s.Name === service);
-                    if (!serviceData) {
-                        throw new Error(
-                            `Required service "${service}" not found in discovery data`,
-                        );
-                    }
-                    acc[service] = serviceData.Path;
-                    return acc;
-                }, {}),
-            };
-            await this.save(newDiscovery);
-
-            const endpoint = newDiscovery.endpoints[requiredService];
-            if (!endpoint) {
-                throw new Error(`Required service ${requiredService} not found in discovery data`);
-            }
-
-            return endpoint;
+            throw error;
         }
     }
 
     async save(discovery: StoredDiscovery): Promise<void> {
         await mkdir(dirname(this.filePath), { recursive: true });
-
-        await writeFile(this.filePath, JSON.stringify(discovery, null, 2), {
-            encoding: "utf8",
-            mode: 0o600,
-        });
-
+        await writeFile(this.filePath, JSON.stringify(discovery, null, 2), "utf-8");
         await chmod(this.filePath, 0o600);
+
+        this.cachedStorage = discovery;
     }
 
     async clear(): Promise<void> {
@@ -138,6 +154,8 @@ class FileDiscoveryStorage implements DiscoveryStorage {
                 throw error;
             }
         }
+
+        this.cachedStorage = undefined;
     }
 }
 

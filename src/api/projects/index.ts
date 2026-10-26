@@ -1,7 +1,8 @@
-import { authStorage, discoveryStorage, workspaceStorage } from "@/storage";
+import { authStorage, discoveryStorage, confStorage } from "@/storage";
 import type { ServiceResponse } from "../types";
 import { checkPriority } from "@/types";
 import type { Priority } from "@/types";
+import { fetchWithTimeout } from "@/utils";
 
 type ProjectMetadata = {
     id: string;
@@ -27,10 +28,10 @@ type ListProjectsResponse = ServiceResponse<{
 async function listProjects(): Promise<Array<ProjectMetadata>> {
     const token = await authStorage.load();
     const endpoint = await discoveryStorage.load("project");
-    const workspaceId = await workspaceStorage.load();
-    const url = new URL(endpoint, "https://qz.sii.edu.cn");
+    const { baseUrl, workspaceId } = await confStorage.load();
+    const url = new URL(endpoint, baseUrl);
     url.searchParams.set("Action", "GetProjectListV2");
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
         headers: {
             Accept: "application/json",
             Authorization: token,

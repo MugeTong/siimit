@@ -1,5 +1,5 @@
 import { authStorage } from "./auth";
+import { confStorage } from "./conf";
 import { discoveryStorage } from "./discovery";
-import { workspaceStorage } from "./workspace";
 
-export { authStorage, discoveryStorage, workspaceStorage };
+export { authStorage, confStorage, discoveryStorage };

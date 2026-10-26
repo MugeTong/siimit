@@ -1,14 +1,16 @@
-import { authStorage, discoveryStorage } from "@/storage";
+import { authStorage, discoveryStorage, confStorage } from "@/storage";
 import type { ServiceResponse } from "../types";
+import { fetchWithTimeout } from "@/utils";
 
 type DeleteJobResponse = ServiceResponse<undefined>;
 
 export async function deleteJob(jobId: string): Promise<void> {
     const token = await authStorage.load();
     const endpoint = await discoveryStorage.load("train");
-    const url = new URL(endpoint, "https://qz.sii.edu.cn");
+    const { baseUrl, workspaceId } = await confStorage.load();
+    const url = new URL(endpoint, baseUrl);
     url.searchParams.set("Action", "DeleteJob");
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
         headers: {
             Accept: "application/json",
             Authorization: token,

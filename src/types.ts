@@ -13,19 +13,20 @@ export function isJobStatus(value: string): value is JobStatus {
     return JOB_STATUSES.includes(value as JobStatus);
 }
 
+const LOW_PRIORITY_LEVEL = 1;
+const HIGH_PRIORITY_LEVEL = 4;
 export const PRIORITIES = ["low", "high"] as const;
-
 export type Priority = (typeof PRIORITIES)[number];
 
 export function checkPriority(value: number): Array<Priority> {
-    if (value < 4) {
+    if (value < HIGH_PRIORITY_LEVEL) {
         return ["low"];
     }
     return ["low", "high"];
 }
 
 export function resolvePriority(value: number): Priority {
-    if (value < 4) {
+    if (value < HIGH_PRIORITY_LEVEL) {
         return "low";
     }
     return "high";
@@ -33,7 +34,7 @@ export function resolvePriority(value: number): Priority {
 
 export function toPriorityNumber(priority: Priority): number {
     if (priority === "low") {
-        return 1;
+        return LOW_PRIORITY_LEVEL;
     }
-    return 4;
+    return HIGH_PRIORITY_LEVEL;
 }

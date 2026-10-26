@@ -1,5 +1,6 @@
-import { authStorage, discoveryStorage, workspaceStorage } from "@/storage";
+import { authStorage, discoveryStorage, confStorage } from "@/storage";
 import type { ServiceResponse } from "../types";
+import { fetchWithTimeout } from "@/utils";
 
 type JobInstances = Array<{
     name: string;
@@ -17,10 +18,10 @@ type JobInstancesResponse = ServiceResponse<{
 export async function listJobInstances(jobId: string): Promise<JobInstances> {
     const token = await authStorage.load();
     const endpoint = await discoveryStorage.load("train");
-
-    const url = new URL(endpoint, "https://qz.sii.edu.cn");
+    const { baseUrl, workspaceId } = await confStorage.load();
+    const url = new URL(endpoint, baseUrl);
     url.searchParams.set("Action", "ListJobInstances");
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
         headers: {
             Accept: "application/json",
             Authorization: token,

@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from "@/utils";
+
 export type DeviceCodeResponse = {
     device_code: string;
     user_code: string;
@@ -26,7 +28,7 @@ async function requestDeviceCode(): Promise<DeviceCodeResponse> {
     const url = new URL(
         "https://keycloak-inspire-prod.sii.edu.cn/realms/inf-internal/protocol/openid-connect/auth/device",
     );
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
         method: "POST",
         headers: {
             Accept: "application/json",
@@ -57,7 +59,7 @@ async function pollForAuth(
     );
     const expireTime = Date.now() + expiresIn * 1000;
     while (Date.now() < expireTime) {
-        const response = await fetch(url, {
+        const response = await fetchWithTimeout(url, {
             method: "POST",
             headers: {
                 Accept: "application/json",
@@ -90,7 +92,7 @@ async function refreshAuth(refreshToken: string): Promise<OAuthTokenResponse> {
     const url = new URL(
         "https://keycloak-inspire-prod.sii.edu.cn/realms/inf-internal/protocol/openid-connect/token",
     );
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
         method: "POST",
         headers: {
             Accept: "application/json",

@@ -1,6 +1,7 @@
-import { authStorage, discoveryStorage } from "@/storage";
+import { authStorage, discoveryStorage, confStorage } from "@/storage";
 import type { ServiceResponse } from "../types";
 import { resolvePriority, type JobStatus, type Priority } from "@/types";
+import { fetchWithTimeout } from "@/utils";
 
 type JobDetails = {
     jobId: string;
@@ -39,10 +40,10 @@ type GetJobResponse = ServiceResponse<{
 export async function getJob(jobId: string): Promise<JobDetails> {
     const token = await authStorage.load();
     const endpoint = await discoveryStorage.load("train");
-    // const workspaceId = await workspaceStorage.load();
-    const url = new URL(endpoint, "https://qz.sii.edu.cn");
+    const { baseUrl, workspaceId } = await confStorage.load();
+    const url = new URL(endpoint, baseUrl);
     url.searchParams.set("Action", "GetJob");
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
         headers: {
             Accept: "application/json",
             Authorization: token,

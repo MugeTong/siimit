@@ -1,7 +1,8 @@
-import { authStorage, discoveryStorage, workspaceStorage } from "@/storage";
+import { authStorage, discoveryStorage, confStorage } from "@/storage";
 import type { ServiceResponse } from "../types";
 import type { JobStatus, Priority } from "@/types";
 import { resolvePriority } from "@/types";
+import { fetchWithTimeout } from "@/utils";
 
 type JobMetadata = {
     jobId: string;
@@ -57,10 +58,10 @@ function fromApiStatus(status: JobApiStatus): JobStatus {
 export async function listJobs(params: ListJobParams): Promise<Array<JobMetadata>> {
     const token = await authStorage.load();
     const endpoint = await discoveryStorage.load("train");
-    const workspaceId = await workspaceStorage.load();
-    const url = new URL(endpoint, "https://qz.sii.edu.cn");
+    const { baseUrl, workspaceId } = await confStorage.load();
+    const url = new URL(endpoint, baseUrl);
     url.searchParams.set("Action", "ListJobs");
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
         headers: {
             Accept: "application/json",
             Authorization: token,
