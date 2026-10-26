@@ -31,10 +31,8 @@ async function waitHandler(self: Command) {
     const targetStatuses = statusMap[forOption.value];
     const deadline = Date.now() + timeoutDuration * 1000;
 
-    let numChecks = 0;
     let checkInterval = 1000;
     let data;
-
     while (true) {
         data = await jobsApi.getJob(jobId.value);
         if (targetStatuses.includes(data.status)) {
@@ -43,7 +41,10 @@ async function waitHandler(self: Command) {
 
         const remaining = deadline - Date.now();
         if (remaining <= 0) {
-            throw new Error(`Timeout reached.\nCurrent status is '${data.status}'.`);
+            throw new Error(
+                `Timeout reached at ${timestamp2date(deadline)}.\n` +
+                    `Current status is '${data.status}'.`,
+            );
         }
 
         await sleep(Math.min(checkInterval, 12000, remaining));
