@@ -1,6 +1,6 @@
 import { Command } from "@/utils";
 import { authApi } from "@/api";
-import { authStorage } from "@/storage";
+import { authStorage, confStorage } from "@/storage";
 
 async function loginHandler(self: Command): Promise<void> {
     const data = await authApi.requestDeviceCode();
@@ -24,6 +24,9 @@ async function loginHandler(self: Command): Promise<void> {
                 ? null
                 : Date.now() + auth.refresh_expires_in * 1000 - 5000, // Subtract 5 seconds
     });
+
+    // Intialize the configuration storage after login.
+    await confStorage.load();
 
     console.log(`\nLogged in successfully!`);
 }
