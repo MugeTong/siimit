@@ -20,6 +20,8 @@ curl -fsSL https://raw.githubusercontent.com/MugeTong/siimit/main/scripts/instal
 
 安装完成后，使用`siimit --help`查看更多功能。
 
+> 初次运行登录命令后，Siimit会在`~\.config\siimit`目录下生成相应的凭证和配置文件。
+
 ## 常用命令
 
 ```bash
