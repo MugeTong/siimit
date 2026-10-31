@@ -31,7 +31,7 @@ async function waitHandler(self: Command) {
     const targetStatuses = statusMap[forOption.value];
     const deadline = Date.now() + timeoutDuration * 1000;
 
-    let checkInterval = 1000;
+    let checkInterval = 5000;
     let data;
     while (true) {
         data = await jobsApi.getJob(jobId.value);
@@ -47,9 +47,10 @@ async function waitHandler(self: Command) {
             );
         }
 
-        await sleep(Math.min(checkInterval, 12000, remaining));
+        const delay = checkInterval * (0.8 + Math.random() * 0.2);
+        await sleep(Math.min(delay, remaining));
 
-        checkInterval = Math.min(checkInterval * 2, 12000);
+        checkInterval = Math.min(checkInterval * 2, 120000);
     }
 
     // Handle the results for better display
