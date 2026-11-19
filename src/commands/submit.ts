@@ -10,7 +10,6 @@ const imageNameOption = new Ref<string>("");
 const groupIdOption = new Ref<string>("");
 const priorityOption = new Ref<Priority>("low");
 const commandOption = new Ref<string>("");
-const commandFileOption = new Ref<string>("");
 const gpusOption = new Ref<number>(1);
 const maxRunTimeOption = new Ref<string>("");
 const nodesOption = new Ref<number>(1);
@@ -21,19 +20,11 @@ const yesFlag = new Ref<boolean>(false);
 async function submitHandler(self: Command): Promise<void> {
     // Validation of parameters
     if (!PRIORITIES.includes(priorityOption.value)) {
-        throw new Error("Invalid priority value.");
+        throw new Error("Invalid priority value");
     }
 
-    if (!commandOption.value && !commandFileOption.value) {
-        throw new Error(
-            "Missing required parameter: either --command or --command-file must be provided",
-        );
-    }
-    if (commandOption.value && commandFileOption.value) {
-        throw new Error("Invalid parameters: --command and --command-file cannot be used together");
-    }
-    if (commandFileOption.value && !fs.existsSync(commandFileOption.value)) {
-        throw new Error("FileNotFoundError: The specified command file does not exist");
+    if (commandOption.value.trim() === "") {
+        throw new Error("Invalid command");
     }
 
     if (!Number.isInteger(gpusOption.value) || gpusOption.value <= 0 || gpusOption.value > 8) {
@@ -56,7 +47,8 @@ async function submitHandler(self: Command): Promise<void> {
         groupIdOption.value,
         priorityOption.value,
     );
-    if (!quotaMap[gpusOption.value]) {
+    const selectedQuotaId = quotaMap[gpusOption.value];
+    if (!selectedQuotaId) {
         throw new Error(
             `Invalid number of GPUs: ${gpusOption.value}.  ` +
                 `Available options for group ${groupIdOption.value} ` +
@@ -83,10 +75,10 @@ async function submitHandler(self: Command): Promise<void> {
         projectId: projectIdOption.value,
         imageName: imageNameOption.value,
         groupId: groupIdOption.value,
+        quotaId: selectedQuotaId,
+        shmGi: gpusOption.value * 200,
         priority: toPriorityNumber(priorityOption.value),
         command: commandOption.value,
-        commandFile: commandFileOption.value,
-        quotaId: quotaMap[gpusOption.value]!,
         maxRunSeconds: maxRunTime,
         nodeCount: nodesOption.value,
     });
@@ -139,15 +131,9 @@ submitCommand.setOption(priorityOption, {
 });
 submitCommand.setOption(commandOption, {
     name: "command",
-    required: false,
+    required: true,
     valueName: "string",
-    description: "command to execute; required if --command-file is not provided",
-});
-submitCommand.setOption(commandFileOption, {
-    name: "command-file",
-    required: false,
-    valueName: "path",
-    description: "bash script file to execute; required if --command is not provided",
+    description: "command to execute",
 });
 submitCommand.setOption(gpusOption, {
     name: "gpus",

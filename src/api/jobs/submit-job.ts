@@ -28,9 +28,9 @@ type SubmitJobParams = {
     projectId: string;
     groupId: string;
     imageName: string;
-    command?: string;
-    commandFile?: string;
     quotaId: string;
+    shmGi: number;
+    command: string;
     priority: number;
     maxRunSeconds: number;
     nodeCount: number;
@@ -57,13 +57,14 @@ export async function submitJob(params: SubmitJobParams): Promise<JobResult> {
             framework_config: [
                 {
                     spec_id: params.quotaId,
+                    shm_gi: params.shmGi,
                     image: `docker.sii.shaipower.online/inspire-studio/${params.imageName}`,
                     image_type: "SOURCE_PRIVATE",
                     instance_count: params.nodeCount,
                 },
             ],
             max_running_time_ms: String(params.maxRunSeconds * 1000),
-            command: params.command || `bash ${params.commandFile}`,
+            command: params.command,
             task_priority: params.priority,
         }),
         method: "POST",
