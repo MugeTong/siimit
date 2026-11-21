@@ -5,8 +5,8 @@ import type { Priority } from "@/types";
 import { fetchWithTimeout } from "@/utils";
 
 type ProjectMetadata = {
-    id: string;
-    name: string;
+    projectId: string;
+    projectName: string;
     priority: Priority[];
     remain: number;
     myRemain: number;
@@ -57,8 +57,8 @@ async function listProjects(): Promise<Array<ProjectMetadata>> {
     }
 
     return payload.Result.items.map((project) => ({
-        id: project.id,
-        name: project.name,
+        projectId: project.id,
+        projectName: project.name,
         priority: checkPriority(Number(project.priority_name)),
         remain: Number(project.remain_budget),
         myRemain: Number(project.member_remain_budget),

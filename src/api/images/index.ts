@@ -3,7 +3,7 @@ import type { ServiceResponse } from "../types";
 import { fetchWithTimeout } from "@/utils";
 
 type ImageMetadata = {
-    name: string;
+    imageName: string;
     status: string;
 };
 
@@ -48,7 +48,7 @@ async function listImages(): Promise<Array<ImageMetadata>> {
     }
 
     return payload.Result.images.map((image) => ({
-        name: image.name,
+        imageName: image.name,
         status: image.status,
     }));
 }

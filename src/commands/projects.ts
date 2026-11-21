@@ -13,7 +13,7 @@ async function projectsHandler(self: Command): Promise<void> {
         ...project,
     }));
 
-    prettyPrint(results, jsonFlag.value, ["id", "name", "priority", "remain", "myRemain"]);
+    prettyPrint(results, jsonFlag.value, ["projectId", "projectName", "priority", "remain", "myRemain"]);
 }
 
 const projectsCommand = new Command({

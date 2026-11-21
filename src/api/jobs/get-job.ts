@@ -3,19 +3,21 @@ import type { ServiceResponse } from "../types";
 import { resolvePriority, type JobStatus, type Priority } from "@/types";
 import { fetchWithTimeout } from "@/utils";
 
-type JobDetails = {
+type JobResult = {
     jobId: string;
-    name: string;
+    jobName: string;
     status: JobStatus;
     priority: Priority;
     groupId: string;
     groupName: string;
     projectId: string;
     projectName: string;
+    imageName: string;
+    gpuCount: number;
+    nodeCount: number;
     createdAt: number;
     finishedAt?: number;
-    runningSeconds?: number;
-    gpuCount: number;
+    maxRunSeconds?: number;
     command: string;
 };
 
@@ -30,14 +32,19 @@ type GetJobResponse = ServiceResponse<{
     logic_compute_group_name: string;
     project_id: string;
     project_name: string;
+    framework_config: Array<{
+        image: string;
+        instance_count: number;
+        gpu_count: number;
+    }>;
     created_at: string;
     finished_at?: string;
     running_time_ms?: string;
-    gpu_count: number;
     command: string;
+    max_run_time_ms?: string;
 }>;
 
-export async function getJob(jobId: string): Promise<JobDetails> {
+export async function getJob(jobId: string): Promise<JobResult> {
     const token = await authStorage.load();
     const endpoint = await discoveryStorage.load("train");
     const { baseUrl, workspaceId } = await confStorage.load();
@@ -69,19 +76,21 @@ export async function getJob(jobId: string): Promise<JobDetails> {
 
     return {
         jobId: payload.Result.job_id,
-        name: payload.Result.name,
+        jobName: payload.Result.name,
         status: payload.Result.status.slice(4) as JobStatus,
         priority: resolvePriority(Number(payload.Result.priority_name)),
         groupId: payload.Result.logic_compute_group_id,
         groupName: payload.Result.logic_compute_group_name,
         projectId: payload.Result.project_id,
         projectName: payload.Result.project_name,
+        imageName: payload.Result.framework_config[0]!.image.split("/").pop()!,
+        gpuCount: payload.Result.framework_config[0]!.gpu_count,
+        nodeCount: payload.Result.framework_config[0]!.instance_count,
         createdAt: Number(payload.Result.created_at),
         finishedAt: payload.Result.finished_at ? Number(payload.Result.finished_at) : undefined,
-        runningSeconds: payload.Result.running_time_ms
-            ? Math.floor(Number(payload.Result.running_time_ms) / 1000)
+        maxRunSeconds: payload.Result.max_run_time_ms
+            ? Math.floor(Number(payload.Result.max_run_time_ms) / 1000)
             : undefined,
-        gpuCount: payload.Result.gpu_count,
         command: payload.Result.command,
     };
 }

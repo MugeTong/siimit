@@ -5,10 +5,10 @@ import { fetchWithTimeout } from "@/utils";
 
 type GroupMetadata = {
     groupId: string;
-    name: string;
-    gpuTotal: number;
+    groupName: string;
+    gpuFree: number;
     lowPriUsed: number;
-    free: number;
+    gpuTotal: number;
 };
 
 type GroupApiMetadata = {
@@ -65,9 +65,9 @@ export async function listGroups(): Promise<Array<GroupMetadata>> {
 
     return outputs.map((group) => ({
         groupId: group.logic_compute_group_id,
-        name: group.name,
-        gpuTotal: group.gpuTotal,
+        groupName: group.name,
+        gpuFree: Math.max(0, group.gpuTotal - group.gpuUsed),
         lowPriUsed: group.gpuLowPriorityUsed,
-        free: Math.max(0, group.gpuTotal - group.gpuUsed),
+        gpuTotal: group.gpuTotal,
     }));
 }

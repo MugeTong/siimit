@@ -36,16 +36,17 @@ async function listHandler(self: Command): Promise<void> {
         ...job,
         status: job.status.toUpperCase(),
         createdAt: timestamp2date(job.createdAt),
+        finishedAt: job.finishedAt ? timestamp2date(job.finishedAt) : "N/A",
     }));
 
     // Output the results
     prettyPrint(results, jsonFlag.value, [
         "jobId",
-        "name",
+        "jobName",
         "status",
         "priority",
-        "groupName",
         "createdAt",
+        "finishedAt",
     ]);
 }
 

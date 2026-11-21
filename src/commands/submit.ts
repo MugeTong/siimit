@@ -109,7 +109,7 @@ submitCommand.setOption(projectIdOption, {
     name: "project",
     required: true,
     valueName: "id",
-    description: "project Id",
+    description: "project ID",
 });
 submitCommand.setOption(imageNameOption, {
     name: "image",
@@ -121,7 +121,7 @@ submitCommand.setOption(groupIdOption, {
     name: "group",
     required: true,
     valueName: "id",
-    description: "computation group Id",
+    description: "computation group ID",
 });
 submitCommand.setOption(priorityOption, {
     name: "priority",

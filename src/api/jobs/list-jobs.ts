@@ -6,16 +6,16 @@ import { fetchWithTimeout } from "@/utils";
 
 type JobMetadata = {
     jobId: string;
-    name: string;
+    jobName: string;
     status: JobStatus;
     priority: Priority;
-    groupId: string;
     groupName: string;
-    projectId: string;
     projectName: string;
+    imageName: string;
+    gpuCount: number;
+    nodeCount: number;
     createdAt: number;
     finishedAt?: number;
-    gpuCount: number;
     command: string;
 };
 
@@ -30,10 +30,16 @@ type JobApiMetadata = {
     logic_compute_group_name: string;
     project_id: string;
     project_name: string;
+    framework_config: Array<{
+        image: string;
+        instance_count: number;
+        gpu_count: number;
+    }>;
     created_at: string;
     finished_at?: string;
-    gpu_count: number;
+    running_time_ms?: string;
     command: string;
+    max_run_time_ms?: string;
 };
 
 type ListJobsResponse = ServiceResponse<{
@@ -89,15 +95,19 @@ export async function listJobs(params: ListJobParams): Promise<Array<JobMetadata
 
     return payload.Result.jobs.map((job) => ({
         jobId: job.job_id,
-        name: job.name,
+        jobName: job.name,
         status: fromApiStatus(job.status),
         priority: resolvePriority(Number(job.priority_name)),
-        groupId: job.logic_compute_group_id,
         groupName: job.logic_compute_group_name,
-        projectId: job.project_id,
         projectName: job.project_name,
+        imageName: job.framework_config[0]!.image.split("/").pop()!,
+        gpuCount: job.framework_config[0]!.gpu_count,
+        nodeCount: job.framework_config[0]!.instance_count,
         createdAt: Number(job.created_at),
-        gpuCount: job.gpu_count,
+        finishedAt: job.finished_at ? Number(job.finished_at) : undefined,
+        maxRunSeconds: job.max_run_time_ms
+            ? Math.floor(Number(job.max_run_time_ms) / 1000)
+            : undefined,
         command: job.command,
     }));
 }

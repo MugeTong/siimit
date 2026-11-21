@@ -13,7 +13,7 @@ async function groupsHandler(self: Command): Promise<void> {
         ...group,
     }));
 
-    prettyPrint(results, jsonFlag.value, ["groupId", "name", "free", "lowPriUsed", "gpuTotal"]);
+    prettyPrint(results, jsonFlag.value, ["groupId", "groupName", "gpuFree", "lowPriUsed", "gpuTotal"]);
 }
 
 const groupsCommand = new Command({

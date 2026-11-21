@@ -13,7 +13,7 @@ async function imagesHandler(self: Command): Promise<void> {
         ...image,
     }));
 
-    prettyPrint(results, jsonFlag.value, ["name", "status"]);
+    prettyPrint(results, jsonFlag.value, ["imageName", "status"]);
 }
 
 const imagesCommand = new Command({
