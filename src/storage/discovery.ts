@@ -103,13 +103,13 @@ class FileDiscoveryStorage implements DiscoveryStorage {
             await this.save(updatedDiscovery);
             return updatedDiscovery;
         }
-        this.cachedStorage = discovery;
         return discovery;
     }
 
     async load(requiredService: Service): Promise<string> {
         if (this.cachedStorage) {
             const checkedDiscovery = await this.checkEffectiveness(this.cachedStorage);
+            this.cachedStorage = checkedDiscovery;
             return checkedDiscovery.endpoints[requiredService]!;
         }
 
@@ -128,10 +128,12 @@ class FileDiscoveryStorage implements DiscoveryStorage {
             }
 
             const checkedDiscovery = await this.checkEffectiveness(discovery);
+            this.cachedStorage = checkedDiscovery;
             return checkedDiscovery.endpoints[requiredService]!;
         } catch (error) {
             if (isFileNotFoundError(error) || isInvalidDiscoveryError(error)) {
                 const discovery = await this.requestNewDiscovery();
+                this.cachedStorage = discovery;
                 return discovery.endpoints[requiredService]!;
             }
             throw error;
@@ -142,8 +144,6 @@ class FileDiscoveryStorage implements DiscoveryStorage {
         await mkdir(dirname(this.filePath), { recursive: true });
         await writeFile(this.filePath, JSON.stringify(discovery, null, 2), "utf-8");
         await chmod(this.filePath, 0o600);
-
-        this.cachedStorage = discovery;
     }
 
     async clear(): Promise<void> {

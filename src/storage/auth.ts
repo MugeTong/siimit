@@ -33,7 +33,6 @@ class FileAuthStorage implements AuthStorage {
         if (Date.now() >= auth.expiresAt) {
             // If the fresh token has also expired, clear the storage and return null
             if (auth.refreshExpiresAt !== null && Date.now() >= auth.refreshExpiresAt) {
-                await this.clear();
                 throw new Error("Refresh token has expired. Please log in again.");
             }
 
@@ -51,13 +50,13 @@ class FileAuthStorage implements AuthStorage {
             await this.save(newAuth);
             return newAuth;
         }
-        this.cachedStorage = auth;
         return auth;
     }
 
     async load(): Promise<string> {
         if (this.cachedStorage) {
             const effectiveAuth = await this.checkEffectiveness(this.cachedStorage);
+            this.cachedStorage = effectiveAuth;
             return `${effectiveAuth.tokenType} ${effectiveAuth.accessToken}`;
         }
 
@@ -76,6 +75,7 @@ class FileAuthStorage implements AuthStorage {
             }
 
             const checkedAuth = await this.checkEffectiveness(auth);
+            this.cachedStorage = checkedAuth;
             return `${checkedAuth.tokenType} ${checkedAuth.accessToken}`;
         } catch (error) {
             if (isFileNotFoundError(error)) {
@@ -89,8 +89,6 @@ class FileAuthStorage implements AuthStorage {
         await mkdir(dirname(this.filePath), { recursive: true });
         await writeFile(this.filePath, JSON.stringify(auth, null, 2), "utf-8");
         await chmod(this.filePath, 0o600);
-
-        this.cachedStorage = auth;
     }
 
     async clear(): Promise<void> {

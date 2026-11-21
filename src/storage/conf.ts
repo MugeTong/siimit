@@ -10,8 +10,8 @@ type StoredConf = {
 
 const defaultConf: StoredConf = {
     schemaVersion: 1,
-    workspaceId: "ws-9dcc0e1f-80a4-4af2-bc2f-0e352e7b17e6",
     baseUrl: "https://qz.sii.edu.cn",
+    workspaceId: "ws-9dcc0e1f-80a4-4af2-bc2f-0e352e7b17e6",
 };
 
 interface ConfStorage {
@@ -24,6 +24,10 @@ function isFileNotFoundError(error: unknown): boolean {
     return error instanceof Error && (error as NodeJS.ErrnoException).code === "ENOENT";
 }
 
+function isInvalidJsonError(error: unknown): boolean {
+    return error instanceof SyntaxError;
+}
+
 class FileConfStorage implements ConfStorage {
     private cachedStorage?: StoredConf;
 
@@ -32,8 +36,8 @@ class FileConfStorage implements ConfStorage {
     ) {}
 
     private handleEnvOverrides(conf: StoredConf): StoredConf {
-        const workspaceId = process.env.SIIMIT_WORKSPACE_ID;
         const baseUrl = process.env.SIIMIT_BASE_URL;
+        const workspaceId = process.env.SIIMIT_WORKSPACE_ID;
 
         return {
             ...conf,
@@ -56,13 +60,15 @@ class FileConfStorage implements ConfStorage {
                     "Invalid data in configuration file. \nRepairing with default configuration.",
                 );
                 await this.save(defaultConf);
+                this.cachedStorage = defaultConf;
                 return this.handleEnvOverrides(defaultConf);
             }
             this.cachedStorage = conf;
             return this.handleEnvOverrides(conf);
         } catch (error) {
-            if (isFileNotFoundError(error)) {
+            if (isFileNotFoundError(error) || isInvalidJsonError(error)) {
                 await this.save(defaultConf);
+                this.cachedStorage = defaultConf;
                 return this.handleEnvOverrides(defaultConf);
             }
             throw error;
@@ -73,8 +79,6 @@ class FileConfStorage implements ConfStorage {
         await mkdir(dirname(this.filePath), { recursive: true });
         await writeFile(this.filePath, JSON.stringify(conf, null, 2), "utf-8");
         await chmod(this.filePath, 0o600);
-
-        this.cachedStorage = conf;
     }
 
     async clear(): Promise<void> {

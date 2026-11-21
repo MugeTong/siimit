@@ -26,6 +26,8 @@ async function loginHandler(self: Command): Promise<void> {
     });
 
     // Intialize the configuration storage after login.
+    // This make sure that users could control the configuration storage after login,
+    // without the need to excute any other commands.
     await confStorage.load();
 
     console.log(`\nLogged in successfully!`);
